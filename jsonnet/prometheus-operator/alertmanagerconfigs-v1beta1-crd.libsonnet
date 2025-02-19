@@ -4128,6 +4128,26 @@
                             ],
                             type: 'object',
                           },
+                          appToken: {
+                            description: "The secret's key that contains the Slack app token.\nThe secret needs to be in the same namespace as the AlertmanagerConfig\nobject and accessible by the Prometheus Operator.",
+                            properties: {
+                              key: {
+                                description: 'The key of the secret to select from.  Must be a valid secret key.',
+                                minLength: 1,
+                                type: 'string',
+                              },
+                              name: {
+                                description: "The name of the secret in the object's namespace to select from.",
+                                minLength: 1,
+                                type: 'string',
+                              },
+                            },
+                            required: [
+                              'key',
+                              'name',
+                            ],
+                            type: 'object',
+                          },
                           callbackId: {
                             type: 'string',
                           },

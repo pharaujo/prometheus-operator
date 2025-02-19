@@ -5458,6 +5458,19 @@ Kubernetes core/v1.SecretKeySelector
 </tr>
 <tr>
 <td>
+<code>slackAppToken</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#secretkeyselector-v1-core">
+Kubernetes core/v1.SecretKeySelector
+</a>
+</em>
+</td>
+<td>
+<p>The default Slack App Token.</p>
+</td>
+</tr>
+<tr>
+<td>
 <code>opsGenieApiUrl</code><br/>
 <em>
 <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#secretkeyselector-v1-core">
@@ -30429,6 +30442,22 @@ object and accessible by the Prometheus Operator.</p>
 </tr>
 <tr>
 <td>
+<code>appToken</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#secretkeyselector-v1-core">
+Kubernetes core/v1.SecretKeySelector
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The secret&rsquo;s key that contains the Slack app token.
+The secret needs to be in the same namespace as the AlertmanagerConfig
+object and accessible by the Prometheus Operator.</p>
+</td>
+</tr>
+<tr>
+<td>
 <code>channel</code><br/>
 <em>
 string
@@ -34224,6 +34253,22 @@ SecretKeySelector
 <td>
 <em>(Optional)</em>
 <p>The secret&rsquo;s key that contains the Slack webhook URL.
+The secret needs to be in the same namespace as the AlertmanagerConfig
+object and accessible by the Prometheus Operator.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>appToken</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1beta1.SecretKeySelector">
+SecretKeySelector
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The secret&rsquo;s key that contains the Slack app token.
 The secret needs to be in the same namespace as the AlertmanagerConfig
 object and accessible by the Prometheus Operator.</p>
 </td>

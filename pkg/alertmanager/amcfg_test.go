@@ -279,6 +279,45 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "valid global config with Slack app token",
+			globalConfig: &monitoringv1.AlertmanagerGlobalConfig{
+				SlackAppToken: &corev1.SecretKeySelector{
+					Key: "app_token",
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "slack",
+					},
+				},
+			},
+			amConfig: &monitoringv1alpha1.AlertmanagerConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "global-config",
+					Namespace: "mynamespace",
+				},
+				Spec: monitoringv1alpha1.AlertmanagerConfigSpec{
+					Receivers: []monitoringv1alpha1.Receiver{
+						{
+							Name: "null",
+						},
+						{
+							Name: "myreceiver",
+						},
+					},
+					Route: &monitoringv1alpha1.Route{
+						Receiver: "null",
+						Routes: []v1.JSON{
+							{
+								Raw: myrouteJSON,
+							},
+						},
+					},
+				},
+			},
+			matcherStrategy: monitoringv1.AlertmanagerConfigMatcherStrategy{
+				Type: "OnNamespace",
+			},
+			golden: "valid_global_config_with_Slack_app_token.golden",
+		},
+		{
 			name: "valid global config with OpsGenie API URL",
 			globalConfig: &monitoringv1.AlertmanagerGlobalConfig{
 				OpsGenieAPIURL: &corev1.SecretKeySelector{
@@ -768,6 +807,7 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 				Data: map[string][]byte{
 					"url":         []byte("https://slack.example.com"),
 					"invalid_url": []byte("://slack.example.com"),
+					"app_token":   []byte("xoxb-1234-abcdefgh"),
 				},
 			},
 			&corev1.Secret{
@@ -830,6 +870,9 @@ func TestGenerateConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	version27, err := semver.ParseTolerant("v0.27.0")
+	require.NoError(t, err)
+
+	version28, err := semver.ParseTolerant("v0.28.0")
 	require.NoError(t, err)
 
 	globalSlackAPIURL, err := url.Parse("http://slack.example.com")
@@ -1742,6 +1785,55 @@ func TestGenerateConfig(t *testing.T) {
 			golden: "CR_with_Slack_Receiver_and_global_Slack_URL_File.golden",
 		},
 		{
+			name:      "CR with Slack Receiver and global Slack app token",
+			kclient:   fake.NewSimpleClientset(),
+			amVersion: &version28,
+			baseConfig: alertmanagerConfig{
+				Global: &globalConfig{
+					SlackAppToken: "xoxb-1234-abcdefgh",
+				},
+				Route: &route{
+					Receiver: "null",
+				},
+				Receivers: []*receiver{{Name: "null"}},
+			},
+			amConfigs: map[string]*monitoringv1alpha1.AlertmanagerConfig{
+				"mynamespace": {
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "myamc",
+						Namespace: "mynamespace",
+					},
+					Spec: monitoringv1alpha1.AlertmanagerConfigSpec{
+						Route: &monitoringv1alpha1.Route{
+							Receiver: "test",
+						},
+						Receivers: []monitoringv1alpha1.Receiver{{
+							Name: "test",
+							SlackConfigs: []monitoringv1alpha1.SlackConfig{{
+								Actions: []monitoringv1alpha1.SlackAction{
+									{
+										Type: "type",
+										Text: "text",
+										Name: "my-action",
+										ConfirmField: &monitoringv1alpha1.SlackConfirmationField{
+											Text: "text",
+										},
+									},
+								},
+								Fields: []monitoringv1alpha1.SlackField{
+									{
+										Title: "title",
+										Value: "value",
+									},
+								},
+							}},
+						}},
+					},
+				},
+			},
+			golden: "CR_with_Slack_Receiver_and_global_Slack_app_token.golden",
+		},
+		{
 			name: "CR with SNS Receiver with Access and Key",
 			kclient: fake.NewSimpleClientset(
 				&corev1.Secret{
@@ -2383,6 +2475,9 @@ func TestSanitizeConfig(t *testing.T) {
 	versionSMTPTLSConfigAllowed := semver.Version{Major: 0, Minor: 28}
 	versionSMTPTLSConfigNotAllowed := semver.Version{Major: 0, Minor: 27}
 
+	versionSlackAppTokenAllowed := semver.Version{Major: 0, Minor: 28}
+	versionSlackAppTokenNotAllowed := semver.Version{Major: 0, Minor: 27}
+
 	for _, tc := range []struct {
 		name           string
 		againstVersion semver.Version
@@ -2472,6 +2567,38 @@ func TestSanitizeConfig(t *testing.T) {
 				},
 			},
 			golden: "test_api_url_file_is_dropped_in_slack_config_for_unsupported_versions.golden",
+		},
+		{
+			name:           "Test app_token is dropped in slack config for unsupported versions",
+			againstVersion: versionSlackAppTokenNotAllowed,
+			in: &alertmanagerConfig{
+				Receivers: []*receiver{
+					{
+						SlackConfigs: []*slackConfig{
+							{
+								AppToken: "xoxb-1234-abcdefgh",
+							},
+						},
+					},
+				},
+			},
+			golden: "test_app_token_field_dropped_in_slack_config_for_unsupported_versions.golden",
+		},
+		{
+			name:           "Test app_token is added in slack config for supported versions",
+			againstVersion: versionSlackAppTokenAllowed,
+			in: &alertmanagerConfig{
+				Receivers: []*receiver{
+					{
+						SlackConfigs: []*slackConfig{
+							{
+								AppToken: "xoxb-1234-abcdefgh",
+							},
+						},
+					},
+				},
+			},
+			golden: "test_app_token_field_added_in_slack_config_for_supported_versions.golden",
 		},
 		{
 			name:           "Test slack config happy path",

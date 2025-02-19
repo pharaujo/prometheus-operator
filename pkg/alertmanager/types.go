@@ -56,6 +56,9 @@ type globalConfig struct {
 	SMTPTLSConfig        *tlsConfig      `yaml:"smtp_tls_config,omitempty" json:"smtp_tls_config,omitempty"`
 	SlackAPIURL          *config.URL     `yaml:"slack_api_url,omitempty" json:"slack_api_url,omitempty"`
 	SlackAPIURLFile      string          `yaml:"slack_api_url_file,omitempty" json:"slack_api_url_file,omitempty"`
+	SlackAppToken        string          `yaml:"slack_app_token,omitempty" json:"slack_app_token,omitempty"`
+	SlackAppTokenFile    string          `yaml:"slack_app_token_file,omitempty" json:"slack_app_token_file,omitempty"`
+	SlackAppURL          *config.URL     `yaml:"slack_app_url,omitempty" json:"slack_app_url,omitempty"`
 	PagerdutyURL         *config.URL     `yaml:"pagerduty_url,omitempty" json:"pagerduty_url,omitempty"`
 	HipchatAPIURL        *config.URL     `yaml:"hipchat_api_url,omitempty" json:"hipchat_api_url,omitempty"`
 	HipchatAuthToken     string          `yaml:"hipchat_auth_token,omitempty" json:"hipchat_auth_token,omitempty"`
@@ -185,6 +188,9 @@ type slackConfig struct {
 	HTTPConfig    *httpClientConfig `yaml:"http_config,omitempty" json:"http_config,omitempty"`
 	APIURL        string            `yaml:"api_url,omitempty" json:"api_url,omitempty"`
 	APIURLFile    string            `yaml:"api_url_file,omitempty" json:"api_url_file,omitempty"`
+	AppToken      string            `yaml:"app_token,omitempty" json:"app_token,omitempty"`
+	AppTokenFile  string            `yaml:"app_token_file,omitempty" json:"app_token_file,omitempty"`
+	AppURL        string            `yaml:"app_url,omitempty" json:"app_url,omitempty"`
 	Channel       string            `yaml:"channel,omitempty" json:"channel,omitempty"`
 	Username      string            `yaml:"username,omitempty" json:"username,omitempty"`
 	Color         string            `yaml:"color,omitempty" json:"color,omitempty"`

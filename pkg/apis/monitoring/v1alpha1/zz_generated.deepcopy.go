@@ -2686,6 +2686,11 @@ func (in *SlackConfig) DeepCopyInto(out *SlackConfig) {
 		*out = new(corev1.SecretKeySelector)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.AppToken != nil {
+		in, out := &in.AppToken, &out.AppToken
+		*out = new(corev1.SecretKeySelector)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.Fields != nil {
 		in, out := &in.Fields, &out.Fields
 		*out = make([]SlackField, len(*in))

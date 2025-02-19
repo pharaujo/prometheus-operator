@@ -347,6 +347,9 @@ type AlertmanagerGlobalConfig struct {
 	// The default Slack API URL.
 	SlackAPIURL *v1.SecretKeySelector `json:"slackApiUrl,omitempty"`
 
+	// The default Slack App Token.
+	SlackAppToken *v1.SecretKeySelector `json:"slackAppToken,omitempty"`
+
 	// The default OpsGenie API URL.
 	OpsGenieAPIURL *v1.SecretKeySelector `json:"opsGenieApiUrl,omitempty"`
 
