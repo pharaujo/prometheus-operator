@@ -144,5 +144,5 @@ require (
 replace (
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring => ./pkg/apis/monitoring
 	github.com/prometheus-operator/prometheus-operator/pkg/client => ./pkg/client
-	github.com/prometheus/alertmanager v0.28.0 => github.com/pharaujo/alertmanager v0.0.0-20250120171658-d6d3160b4110
+	github.com/prometheus/alertmanager v0.28.0 => github.com/pharaujo/alertmanager v0.0.0-20250224150906-069624dfd9f9
 )
