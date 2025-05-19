@@ -34,7 +34,6 @@ import (
 	"gotest.tools/v3/golden"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -74,6 +73,9 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 	version26, err := semver.ParseTolerant("v0.26.0")
 	require.NoError(t, err)
 
+	version28, err := semver.ParseTolerant("v0.28.0")
+	require.NoError(t, err)
+
 	pagerdutyURL := "example.pagerduty.com"
 	invalidPagerdutyURL := "://example.pagerduty.com"
 
@@ -87,7 +89,8 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 		golden          string
 	}{
 		{
-			name: "valid global config",
+			name:      "valid global config",
+			amVersion: &version28,
 			globalConfig: &monitoringv1.AlertmanagerGlobalConfig{
 				SMTPConfig: &monitoringv1.GlobalSMTPConfig{
 					From: ptr.To("from"),
@@ -111,6 +114,11 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 						Key: "secret",
 					},
 					RequireTLS: ptr.To(true),
+					TLSConfig: &monitoringv1.SafeTLSConfig{
+						InsecureSkipVerify: ptr.To(true),
+						MinVersion:         ptr.To(monitoringv1.TLSVersion12),
+						MaxVersion:         ptr.To(monitoringv1.TLSVersion13),
+					},
 				},
 				ResolveTimeout: "30s",
 				HTTPConfig: &monitoringv1.HTTPConfig{
@@ -154,7 +162,7 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 					},
 					Route: &monitoringv1alpha1.Route{
 						Receiver: "null",
-						Routes: []v1.JSON{
+						Routes: []apiextensionsv1.JSON{
 							{
 								Raw: myrouteJSON,
 							},
@@ -193,7 +201,7 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 					},
 					Route: &monitoringv1alpha1.Route{
 						Receiver: "null",
-						Routes: []v1.JSON{
+						Routes: []apiextensionsv1.JSON{
 							{
 								Raw: myrouteJSON,
 							},
@@ -229,7 +237,7 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 					},
 					Route: &monitoringv1alpha1.Route{
 						Receiver: "null",
-						Routes: []v1.JSON{
+						Routes: []apiextensionsv1.JSON{
 							{
 								Raw: myrouteJSON,
 							},
@@ -265,7 +273,7 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 					},
 					Route: &monitoringv1alpha1.Route{
 						Receiver: "null",
-						Routes: []v1.JSON{
+						Routes: []apiextensionsv1.JSON{
 							{
 								Raw: myrouteJSON,
 							},
@@ -343,7 +351,7 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 					},
 					Route: &monitoringv1alpha1.Route{
 						Receiver: "null",
-						Routes: []v1.JSON{
+						Routes: []apiextensionsv1.JSON{
 							{
 								Raw: myrouteJSON,
 							},
@@ -379,7 +387,7 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 					},
 					Route: &monitoringv1alpha1.Route{
 						Receiver: "null",
-						Routes: []v1.JSON{
+						Routes: []apiextensionsv1.JSON{
 							{
 								Raw: myrouteJSON,
 							},
@@ -415,7 +423,7 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 					},
 					Route: &monitoringv1alpha1.Route{
 						Receiver: "null",
-						Routes: []v1.JSON{
+						Routes: []apiextensionsv1.JSON{
 							{
 								Raw: myrouteJSON,
 							},
@@ -454,7 +462,7 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 					},
 					Route: &monitoringv1alpha1.Route{
 						Receiver: "null",
-						Routes: []v1.JSON{
+						Routes: []apiextensionsv1.JSON{
 							{
 								Raw: myrouteJSON,
 							},
@@ -490,7 +498,7 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 					},
 					Route: &monitoringv1alpha1.Route{
 						Receiver: "null",
-						Routes: []v1.JSON{
+						Routes: []apiextensionsv1.JSON{
 							{
 								Raw: myrouteJSON,
 							},
@@ -524,7 +532,7 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 					},
 					Route: &monitoringv1alpha1.Route{
 						Receiver: "null",
-						Routes: []v1.JSON{
+						Routes: []apiextensionsv1.JSON{
 							{
 								Raw: myrouteJSON,
 							},
@@ -555,7 +563,7 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 					},
 					Route: &monitoringv1alpha1.Route{
 						Receiver: "null",
-						Routes: []v1.JSON{
+						Routes: []apiextensionsv1.JSON{
 							{
 								Raw: myrouteJSON,
 							},
@@ -762,6 +770,77 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name:      "valid global config SMTP tlsconfig email receiver",
+			amVersion: &version28,
+			globalConfig: &monitoringv1.AlertmanagerGlobalConfig{
+				SMTPConfig: &monitoringv1.GlobalSMTPConfig{
+					From: ptr.To("from"),
+					SmartHost: &monitoringv1.HostPort{
+						Host: "smtp.example.org",
+						Port: "587",
+					},
+					Hello:        ptr.To("smtp.example.org"),
+					AuthUsername: ptr.To("dev@smtp.example.org"),
+					AuthPassword: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "smtp-auth",
+						},
+						Key: "password",
+					},
+					AuthIdentity: ptr.To("dev@smtp.example.org"),
+					AuthSecret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "smtp-auth",
+						},
+						Key: "secret",
+					},
+					RequireTLS: ptr.To(true),
+					TLSConfig: &monitoringv1.SafeTLSConfig{
+						InsecureSkipVerify: ptr.To(true),
+						MinVersion:         ptr.To(monitoringv1.TLSVersion12),
+						MaxVersion:         ptr.To(monitoringv1.TLSVersion13),
+					},
+				},
+			},
+			amConfig: &monitoringv1alpha1.AlertmanagerConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "global-config",
+					Namespace: "mynamespace",
+				},
+				Spec: monitoringv1alpha1.AlertmanagerConfigSpec{
+					Receivers: []monitoringv1alpha1.Receiver{
+						{
+							Name: "null",
+						},
+						{
+							Name: "myreceiver",
+							EmailConfigs: []monitoringv1alpha1.EmailConfig{
+								{
+									SendResolved: ptr.To(true),
+									Smarthost:    "abc:1234",
+									From:         "a",
+									To:           "b",
+									AuthUsername: "foo",
+								},
+							},
+						},
+					},
+					Route: &monitoringv1alpha1.Route{
+						Receiver: "null",
+						Routes: []apiextensionsv1.JSON{
+							{
+								Raw: myrouteJSON,
+							},
+						},
+					},
+				},
+			},
+			matcherStrategy: monitoringv1.AlertmanagerConfigMatcherStrategy{
+				Type: "OnNamespace",
+			},
+			golden: "valid_global_config_smtp_tlsconfig_email_receiver.golden",
+		},
 	}
 	for _, tt := range tests {
 		if tt.amVersion == nil {
@@ -831,7 +910,7 @@ func TestInitializeFromAlertmanagerConfig(t *testing.T) {
 				},
 			},
 		)
-		cb := newConfigBuilder(
+		cb := NewConfigBuilder(
 			newNopLogger(t),
 			*tt.amVersion,
 			assets.NewStoreBuilder(kclient.CoreV1(), kclient.CoreV1()),
@@ -1640,6 +1719,68 @@ func TestGenerateConfig(t *testing.T) {
 			golden: "CR_with_WeChat_Receiver.golden",
 		},
 		{
+			name: "CR with Pushover Receiver",
+			kclient: fake.NewSimpleClientset(
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "am-pushover-test-receiver",
+						Namespace: "mynamespace",
+					},
+					Data: map[string][]byte{
+						"userkey": []byte("userkeySecret"),
+					},
+				},
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "am-pushover-token-receiver",
+						Namespace: "mynamespace",
+					},
+					Data: map[string][]byte{
+						"token": []byte("tokenSecret"),
+					},
+				},
+			),
+			baseConfig: alertmanagerConfig{
+				Route: &route{
+					Receiver: "null",
+				},
+				Receivers: []*receiver{{Name: "null"}},
+			},
+			amConfigs: map[string]*monitoringv1alpha1.AlertmanagerConfig{
+				"mynamespace": {
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "myamc",
+						Namespace: "mynamespace",
+					},
+					Spec: monitoringv1alpha1.AlertmanagerConfigSpec{
+						Route: &monitoringv1alpha1.Route{
+							Receiver: "test",
+						},
+						Receivers: []monitoringv1alpha1.Receiver{{
+							Name: "test",
+							PushoverConfigs: []monitoringv1alpha1.PushoverConfig{{
+								UserKey: &corev1.SecretKeySelector{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: "am-pushover-test-receiver",
+									},
+									Key: "userkey",
+								},
+								Token: &corev1.SecretKeySelector{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: "am-pushover-token-receiver",
+									},
+									Key: "token",
+								},
+								Retry:  "5m",
+								Expire: "30s",
+							}},
+						}},
+					},
+				},
+			},
+			golden: "CR_with_Pushover_Receiver.golden",
+		},
+		{
 			name:      "CR with Telegram Receiver",
 			amVersion: &version24,
 			kclient: fake.NewSimpleClientset(
@@ -2255,6 +2396,108 @@ func TestGenerateConfig(t *testing.T) {
 			golden: "CR_with_MSTeams_Receiver_Partial_Conf.golden",
 		},
 		{
+			name:      "CR with MSTeamsV2 Receiver",
+			amVersion: &version28,
+			kclient: fake.NewSimpleClientset(
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "ms-teams-secret",
+						Namespace: "mynamespace",
+					},
+					Data: map[string][]byte{
+						"url": []byte("https://prod-108.westeurope.logic.azure.com:443/workflows/id"),
+					},
+				},
+			),
+			baseConfig: alertmanagerConfig{
+				Route: &route{
+					Receiver: "null",
+				},
+				Receivers: []*receiver{{Name: "null"}},
+			},
+			amConfigs: map[string]*monitoringv1alpha1.AlertmanagerConfig{
+				"mynamespace": {
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "myamc",
+						Namespace: "mynamespace",
+					},
+					Spec: monitoringv1alpha1.AlertmanagerConfigSpec{
+						Route: &monitoringv1alpha1.Route{
+							Receiver: "test",
+						},
+						Receivers: []monitoringv1alpha1.Receiver{
+							{
+								Name: "test",
+								MSTeamsV2Configs: []monitoringv1alpha1.MSTeamsV2Config{
+									{
+										WebhookURL: &corev1.SecretKeySelector{
+											Key: "url",
+											LocalObjectReference: corev1.LocalObjectReference{
+												Name: "ms-teams-secret",
+											},
+										},
+										Title: ptr.To("test title"),
+										Text:  ptr.To("test text"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			golden: "CR_with_MSTeamsV2_Receiver.golden",
+		},
+		{
+			name:      "CR with MSTeamsV2 Receiver with Partial Conf",
+			amVersion: &version28,
+			kclient: fake.NewSimpleClientset(
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "ms-teams-secret",
+						Namespace: "mynamespace",
+					},
+					Data: map[string][]byte{
+						"url": []byte("https://prod-108.westeurope.logic.azure.com:443/workflows/id"),
+					},
+				},
+			),
+			baseConfig: alertmanagerConfig{
+				Route: &route{
+					Receiver: "null",
+				},
+				Receivers: []*receiver{{Name: "null"}},
+			},
+			amConfigs: map[string]*monitoringv1alpha1.AlertmanagerConfig{
+				"mynamespace": {
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "myamc",
+						Namespace: "mynamespace",
+					},
+					Spec: monitoringv1alpha1.AlertmanagerConfigSpec{
+						Route: &monitoringv1alpha1.Route{
+							Receiver: "test",
+						},
+						Receivers: []monitoringv1alpha1.Receiver{
+							{
+								Name: "test",
+								MSTeamsV2Configs: []monitoringv1alpha1.MSTeamsV2Config{
+									{
+										WebhookURL: &corev1.SecretKeySelector{
+											Key: "url",
+											LocalObjectReference: corev1.LocalObjectReference{
+												Name: "ms-teams-secret",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			golden: "CR_with_MSTeamsV2_Receiver_Partial_Conf.golden",
+		},
+		{
 			name:      "CR with EmailConfig with Required Fields specified at Receiver level",
 			amVersion: &version26,
 			kclient:   fake.NewSimpleClientset(),
@@ -2405,6 +2648,78 @@ func TestGenerateConfig(t *testing.T) {
 			},
 			golden: "CR_with_EmailConfig_Receiver_Global_Defaults_Conf.golden",
 		},
+		{
+			name:      "CR with WebhookConfig with Timeout Setup",
+			amVersion: &version28,
+			kclient:   fake.NewSimpleClientset(),
+			baseConfig: alertmanagerConfig{
+				Route: &route{
+					Receiver: "null",
+				},
+				Receivers: []*receiver{{Name: "null"}},
+			},
+			amConfigs: map[string]*monitoringv1alpha1.AlertmanagerConfig{
+				"mynamespace": {
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "myamc",
+						Namespace: "mynamespace",
+					},
+					Spec: monitoringv1alpha1.AlertmanagerConfigSpec{
+						Route: &monitoringv1alpha1.Route{
+							Receiver: "test",
+						},
+						Receivers: []monitoringv1alpha1.Receiver{
+							{
+								Name: "test",
+								WebhookConfigs: []monitoringv1alpha1.WebhookConfig{
+									{
+										URL:     ptr.To("https://example.com/"),
+										Timeout: ptr.To(monitoringv1.Duration("5s")),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			golden: "CR_with_WebhookConfig_with_Timeout_Setup.golden",
+		},
+		{
+			name:      "CR with WebhookConfig with Timeout Setup Older Version",
+			amVersion: &version26,
+			kclient:   fake.NewSimpleClientset(),
+			baseConfig: alertmanagerConfig{
+				Route: &route{
+					Receiver: "null",
+				},
+				Receivers: []*receiver{{Name: "null"}},
+			},
+			amConfigs: map[string]*monitoringv1alpha1.AlertmanagerConfig{
+				"mynamespace": {
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "myamc",
+						Namespace: "mynamespace",
+					},
+					Spec: monitoringv1alpha1.AlertmanagerConfigSpec{
+						Route: &monitoringv1alpha1.Route{
+							Receiver: "test",
+						},
+						Receivers: []monitoringv1alpha1.Receiver{
+							{
+								Name: "test",
+								WebhookConfigs: []monitoringv1alpha1.WebhookConfig{
+									{
+										URL:     ptr.To("https://example.com/"),
+										Timeout: ptr.To(monitoringv1.Duration("5s")),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			golden: "CR_with_WebhookConfig_with_Timeout_Setup_Older_Version.golden",
+		},
 	}
 
 	logger := newNopLogger(t)
@@ -2418,16 +2733,16 @@ func TestGenerateConfig(t *testing.T) {
 				tc.amVersion = &version
 			}
 
-			cb := newConfigBuilder(logger, *tc.amVersion, store, tc.matcherStrategy)
+			cb := NewConfigBuilder(logger, *tc.amVersion, store, tc.matcherStrategy)
 			cb.cfg = &tc.baseConfig
 
 			if tc.expectedError {
-				require.Error(t, cb.addAlertmanagerConfigs(context.Background(), tc.amConfigs))
+				require.Error(t, cb.AddAlertmanagerConfigs(context.Background(), tc.amConfigs))
 				return
 			}
-			require.NoError(t, cb.addAlertmanagerConfigs(context.Background(), tc.amConfigs))
+			require.NoError(t, cb.AddAlertmanagerConfigs(context.Background(), tc.amConfigs))
 
-			cfgBytes, err := cb.marshalJSON()
+			cfgBytes, err := cb.MarshalJSON()
 			require.NoError(t, err)
 
 			// Verify the generated yaml is as expected
@@ -2969,6 +3284,22 @@ func TestSanitizeConfig(t *testing.T) {
 				},
 			},
 			expectErr: true,
+		},
+		{
+			name:           "msteamsv2_config with webhook url file set",
+			againstVersion: versionMSteamsV2Allowed,
+			in: &alertmanagerConfig{
+				Receivers: []*receiver{
+					{
+						MSTeamsV2Configs: []*msTeamsV2Config{
+							{
+								WebhookURLFile: "/var/secrets/webhook-url-file",
+							},
+						},
+					},
+				},
+			},
+			golden: "msteamsv2_config_with_webhook_config_file_set.golden",
 		},
 		{
 			name:           "webex_config returns error for missing mandatory field",
@@ -4248,6 +4579,143 @@ func TestSanitizeJiraConfig(t *testing.T) {
 	}
 }
 
+func TestSanitizeDiscordConfig(t *testing.T) {
+	logger := newNopLogger(t)
+
+	for _, tc := range []struct {
+		name           string
+		againstVersion semver.Version
+		in             *alertmanagerConfig
+		golden         string
+	}{
+		{
+			name:           "Test Username field is dropped in discord config for unsupported versions",
+			againstVersion: semver.Version{Major: 0, Minor: 27},
+			in: &alertmanagerConfig{
+				Receivers: []*receiver{
+					{
+						Name: "discord",
+						DiscordConfigs: []*discordConfig{
+							{
+								Username:   "content",
+								WebhookURL: "http://example.com",
+								Message:    "test message",
+							},
+						},
+					},
+				},
+			},
+			golden: "Discord_username_dropped_in_unsupported_versions_config.golden",
+		},
+		{
+			name:           "Test Username field add in discord config for supported versions",
+			againstVersion: semver.Version{Major: 0, Minor: 28},
+			in: &alertmanagerConfig{
+				Receivers: []*receiver{
+					{
+						Name: "discord",
+						DiscordConfigs: []*discordConfig{
+							{
+								Username:   "content",
+								WebhookURL: "http://example.com",
+								Message:    "test message",
+							},
+						},
+					},
+				},
+			},
+			golden: "Discord_username_add_in_supported_versions_config.golden",
+		},
+		{
+			name:           "Test AvatarURL field is dropped in discord config for unsupported versions",
+			againstVersion: semver.Version{Major: 0, Minor: 27},
+			in: &alertmanagerConfig{
+				Receivers: []*receiver{
+					{
+						Name: "discord",
+						DiscordConfigs: []*discordConfig{
+							{
+								AvatarURL:  "content",
+								WebhookURL: "http://example.com",
+								Message:    "test message",
+							},
+						},
+					},
+				},
+			},
+			golden: "Discord_avatarURL_dropped_in_unsupported_versions_config.golden",
+		},
+		{
+			name:           "Test AvatarURL field add in discord config for supported versions",
+			againstVersion: semver.Version{Major: 0, Minor: 28},
+			in: &alertmanagerConfig{
+				Receivers: []*receiver{
+					{
+						Name: "discord",
+						DiscordConfigs: []*discordConfig{
+							{
+								AvatarURL:  "content",
+								WebhookURL: "http://example.com",
+								Message:    "test message",
+							},
+						},
+					},
+				},
+			},
+			golden: "Discord_avatarURL_add_in_supported_versions_config.golden",
+		},
+		{
+			name:           "Test Content field is dropped in discord config for unsupported versions",
+			againstVersion: semver.Version{Major: 0, Minor: 27},
+			in: &alertmanagerConfig{
+				Receivers: []*receiver{
+					{
+						Name: "discord",
+						DiscordConfigs: []*discordConfig{
+							{
+								Content:    "content",
+								WebhookURL: "http://example.com",
+								Message:    "test message",
+							},
+						},
+					},
+				},
+			},
+			golden: "Discord_content_dropped_in_unsupported_versions_config.golden",
+		},
+		{
+			name:           "Test Content field add in discord config for supported versions",
+			againstVersion: semver.Version{Major: 0, Minor: 28},
+			in: &alertmanagerConfig{
+				Receivers: []*receiver{
+					{
+						Name: "discord",
+						DiscordConfigs: []*discordConfig{
+							{
+								Content:    "test content",
+								WebhookURL: "http://example.com",
+								Message:    "test message",
+							},
+						},
+					},
+				},
+			},
+			golden: "Discord_content_add_in_supported_versions_config.golden",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.in.sanitize(tc.againstVersion, logger)
+			require.NoError(t, err)
+
+			amConfigs, err := yaml.Marshal(tc.in)
+			require.NoError(t, err)
+
+			golden.Assert(t, string(amConfigs), tc.golden)
+		})
+	}
+
+}
+
 func TestSanitizeRocketChatConfig(t *testing.T) {
 	logger := newNopLogger(t)
 	versionRocketChatAllowed := semver.Version{Major: 0, Minor: 28}
@@ -4626,7 +5094,7 @@ func TestConvertHTTPConfig(t *testing.T) {
 			v, err := semver.ParseTolerant(operator.DefaultAlertmanagerVersion)
 			require.NoError(t, err)
 
-			cb := newConfigBuilder(
+			cb := NewConfigBuilder(
 				newNopLogger(t),
 				v,
 				nil,

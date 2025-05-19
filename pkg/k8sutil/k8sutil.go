@@ -33,6 +33,7 @@ import (
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -202,8 +203,8 @@ func IsAllowed(
 						resource += "/" + ra.Name
 					}
 
-					switch {
-					case ns == v1.NamespaceAll:
+					switch ns {
+					case v1.NamespaceAll:
 						reason = fmt.Errorf("missing %q permission on resource %q (group: %q) for all namespaces", verb, resource, ra.Group)
 					default:
 						reason = fmt.Errorf("missing %q permission on resource %q (group: %q) for namespace %q", verb, resource, ra.Group, ns)
@@ -262,6 +263,9 @@ func CreateOrUpdateService(ctx context.Context, sclient clientv1.ServiceInterfac
 	return ret, err
 }
 
+// CreateOrUpdateEndpoints creates or updates an endpoint resource.
+//
+//nolint:staticcheck // Ignore SA1019 Endpoints is marked as deprecated.
 func CreateOrUpdateEndpoints(ctx context.Context, eclient clientv1.EndpointsInterface, eps *v1.Endpoints) error {
 	// As stated in the RetryOnConflict's documentation, the returned error shouldn't be wrapped.
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
@@ -489,32 +493,32 @@ func AddTypeInformationToObject(obj runtime.Object) error {
 	return nil
 }
 
-func mergeOwnerReferences(old []metav1.OwnerReference, new []metav1.OwnerReference) []metav1.OwnerReference {
+func mergeOwnerReferences(oldObj []metav1.OwnerReference, newObj []metav1.OwnerReference) []metav1.OwnerReference {
 	existing := make(map[metav1.OwnerReference]bool)
-	for _, ownerRef := range old {
+	for _, ownerRef := range oldObj {
 		existing[ownerRef] = true
 	}
-	for _, ownerRef := range new {
+	for _, ownerRef := range newObj {
 		if _, ok := existing[ownerRef]; !ok {
-			old = append(old, ownerRef)
+			oldObj = append(oldObj, ownerRef)
 		}
 	}
-	return old
+	return oldObj
 }
 
 // mergeMetadata takes labels and annotations from the old resource and merges
 // them into the new resource. If a key is present in both resources, the new
 // resource wins. It also copies the ResourceVersion from the old resource to
 // the new resource to prevent update conflicts.
-func mergeMetadata(new *metav1.ObjectMeta, old metav1.ObjectMeta) {
-	new.ResourceVersion = old.ResourceVersion
+func mergeMetadata(newObj *metav1.ObjectMeta, oldObj metav1.ObjectMeta) {
+	newObj.ResourceVersion = oldObj.ResourceVersion
 
-	new.SetLabels(mergeMaps(new.Labels, old.Labels))
-	new.SetAnnotations(mergeMaps(new.Annotations, old.Annotations))
+	newObj.SetLabels(mergeMaps(newObj.Labels, oldObj.Labels))
+	newObj.SetAnnotations(mergeMaps(newObj.Annotations, oldObj.Annotations))
 }
 
-func mergeMaps(new map[string]string, old map[string]string) map[string]string {
-	return mergeMapsByPrefix(new, old, "")
+func mergeMaps(newObj map[string]string, oldObj map[string]string) map[string]string {
+	return mergeMapsByPrefix(newObj, oldObj, "")
 }
 
 func mergeKubectlAnnotations(from *metav1.ObjectMeta, to metav1.ObjectMeta) {
@@ -565,4 +569,33 @@ func UpdateDNSPolicy(podSpec *v1.PodSpec, dnsPolicy *monitoringv1.DNSPolicy) {
 	}
 
 	podSpec.DNSPolicy = v1.DNSPolicy(*dnsPolicy)
+}
+
+// This function is responsible for the following:
+//
+// Verify that the service exists in the resource's namespace
+// If it does not exist, fail the reconciliation.
+//
+// If the ServiceName is specified and a service with the same name exists in the same namespace as the
+// resource, ensure that the custom governing service's selector matches the
+// labels.
+// If it is not selected, fail the reconciliation
+// Warning: the function will panic if the resource's ServiceName is nil..
+func EnsureCustomGoverningService(ctx context.Context, namespace string, serviceName string, svcClient clientv1.ServiceInterface, selectorLabels map[string]string) error {
+	// Check if the custom governing service is defined in the same namespace and selects the Prometheus pod.
+	svc, err := svcClient.Get(ctx, serviceName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to get custom governing service %s/%s: %w", namespace, serviceName, err)
+	}
+
+	svcSelector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{MatchLabels: svc.Spec.Selector})
+	if err != nil {
+		return fmt.Errorf("failed to parse the selector labels for custom governing service %s/%s: %w", namespace, serviceName, err)
+	}
+
+	if !svcSelector.Matches(labels.Set(selectorLabels)) {
+		return fmt.Errorf("custom governing service %s/%s with selector %q does not select pods with labels %q",
+			namespace, serviceName, svcSelector.String(), labels.Set(selectorLabels).String())
+	}
+	return nil
 }

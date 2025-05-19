@@ -4324,6 +4324,26 @@ func TestRemoteWriteConfig(t *testing.T) {
 			},
 			golden: "RemoteWriteConfig_v3.1.0.golden",
 		},
+		{
+			version: "v2.28.0",
+			remoteWrite: monitoringv1.RemoteWriteSpec{
+				URL: "http://example.com",
+				MetadataConfig: &monitoringv1.MetadataConfig{
+					MaxSamplesPerSend: ptr.To(int32(10)),
+				},
+			},
+			golden: "RemoteWriteConfig_v2.28.0_MaxSamplesPerSendMetadataConfig.golden",
+		},
+		{
+			version: "v2.29.0",
+			remoteWrite: monitoringv1.RemoteWriteSpec{
+				URL: "http://example.com",
+				MetadataConfig: &monitoringv1.MetadataConfig{
+					MaxSamplesPerSend: ptr.To(int32(10)),
+				},
+			},
+			golden: "RemoteWriteConfig_v2.29.0_MaxSamplesPerSendMetadataConfig.golden",
+		},
 	} {
 		t.Run(fmt.Sprintf("i=%d,version=%s", i, tc.version), func(t *testing.T) {
 			p := defaultPrometheus()
@@ -4840,13 +4860,24 @@ func TestNativeHistogramConfig(t *testing.T) {
 		golden                string
 	}{
 		{
+			version: "v3.0.0",
+			nativeHistogramConfig: monitoringv1.NativeHistogramConfig{
+				NativeHistogramBucketLimit:     ptr.To(uint64(10)),
+				ScrapeClassicHistograms:        ptr.To(true),
+				NativeHistogramMinBucketFactor: ptr.To(resource.MustParse("12.124")),
+				ConvertClassicHistogramsToNHCB: ptr.To(true),
+			},
+			golden: "NativeHistogramConfig.golden",
+		},
+		{
 			version: "v2.54.0",
 			nativeHistogramConfig: monitoringv1.NativeHistogramConfig{
 				NativeHistogramBucketLimit:     ptr.To(uint64(10)),
 				ScrapeClassicHistograms:        ptr.To(true),
 				NativeHistogramMinBucketFactor: ptr.To(resource.MustParse("12.124")),
+				ConvertClassicHistogramsToNHCB: ptr.To(true),
 			},
-			golden: "NativeHistogramConfig.golden",
+			golden: "NativeHistogramConfigMissConvertClassicHistogramsToNHCB.golden",
 		},
 		{
 			version: "v2.46.0",
@@ -4854,6 +4885,7 @@ func TestNativeHistogramConfig(t *testing.T) {
 				NativeHistogramBucketLimit:     ptr.To(uint64(10)),
 				ScrapeClassicHistograms:        ptr.To(true),
 				NativeHistogramMinBucketFactor: ptr.To(resource.MustParse("12.124")),
+				ConvertClassicHistogramsToNHCB: ptr.To(true),
 			},
 			golden: "NativeHistogramConfigWithMissNativeHistogramMinBucketFactor.golden",
 		},
@@ -4863,6 +4895,7 @@ func TestNativeHistogramConfig(t *testing.T) {
 				NativeHistogramBucketLimit:     ptr.To(uint64(10)),
 				ScrapeClassicHistograms:        ptr.To(true),
 				NativeHistogramMinBucketFactor: ptr.To(resource.MustParse("12.124")),
+				ConvertClassicHistogramsToNHCB: ptr.To(true),
 			},
 			golden: "NativeHistogramConfigWithMissALL.golden",
 		},
@@ -4872,6 +4905,7 @@ func TestNativeHistogramConfig(t *testing.T) {
 				NativeHistogramBucketLimit:     ptr.To(uint64(10)),
 				ScrapeClassicHistograms:        ptr.To(true),
 				NativeHistogramMinBucketFactor: ptr.To(resource.MustParse("12.124")),
+				ConvertClassicHistogramsToNHCB: ptr.To(true),
 			},
 			golden: "NativeHistogramConfigAlwaysScrapeClassicHistograms.golden",
 		},
@@ -5856,11 +5890,12 @@ func TestProbeSpecConfig(t *testing.T) {
 func TestScrapeConfigSpecConfig(t *testing.T) {
 	refreshInterval := monitoringv1.Duration("5m")
 	for _, tc := range []struct {
-		name      string
-		version   string
-		patchProm func(*monitoringv1.Prometheus)
-		scSpec    monitoringv1alpha1.ScrapeConfigSpec
-		golden    string
+		name            string
+		version         string
+		patchProm       func(*monitoringv1.Prometheus)
+		scSpec          monitoringv1alpha1.ScrapeConfigSpec
+		inlineTLSConfig bool
+		golden          string
 	}{
 		{
 			name:   "empty_scrape_config",
@@ -5929,8 +5964,8 @@ func TestScrapeConfigSpecConfig(t *testing.T) {
 						Action:       "hashmod",
 					},
 					{
-						SourceLabels: []monitoringv1.LabelName{"__tmp_hash"},
-						Regex:        "$(SHARD)",
+						SourceLabels: []monitoringv1.LabelName{"__tmp_hash", "__tmp_disable_sharding"},
+						Regex:        "$(SHARD);|.+;.+",
 						Action:       "keep",
 					},
 				},
@@ -6105,6 +6140,53 @@ func TestScrapeConfigSpecConfig(t *testing.T) {
 				},
 			},
 			golden: "ScrapeConfigSpecConfig_Authorization.golden",
+		},
+		{
+			name: "inline_tlsconfig",
+			scSpec: monitoringv1alpha1.ScrapeConfigSpec{
+				TLSConfig: &monitoringv1.SafeTLSConfig{
+					CA: monitoringv1.SecretOrConfigMap{
+						Secret: &v1.SecretKeySelector{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: "tls",
+							},
+							Key: "ca",
+						},
+					},
+					Cert: monitoringv1.SecretOrConfigMap{
+						Secret: &v1.SecretKeySelector{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: "tls",
+							},
+							Key: "cert",
+						},
+					},
+					KeySecret: &v1.SecretKeySelector{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: "tls",
+						},
+						Key: "private-key",
+					},
+				},
+				HTTPSDConfigs: []monitoringv1alpha1.HTTPSDConfig{
+					{
+						URL: "http://localhost:9100/sd.json",
+						TLSConfig: &monitoringv1.SafeTLSConfig{
+							InsecureSkipVerify: ptr.To(false),
+							CA: monitoringv1.SecretOrConfigMap{
+								Secret: &v1.SecretKeySelector{
+									LocalObjectReference: v1.LocalObjectReference{
+										Name: "tls",
+									},
+									Key: "ca2",
+								},
+							},
+						},
+					},
+				},
+			},
+			inlineTLSConfig: true,
+			golden:          "ScrapeConfigSpecConfig_Inline_TLSConfig.golden",
 		},
 		{
 			name: "tlsconfig",
@@ -6529,6 +6611,7 @@ func TestScrapeConfigSpecConfig(t *testing.T) {
 			}
 
 			cg := mustNewConfigGenerator(t, p)
+			cg.inlineTLSConfig = tc.inlineTLSConfig
 
 			store := assets.NewTestStoreBuilder(
 				&v1.Secret{
@@ -6581,6 +6664,18 @@ func TestScrapeConfigSpecConfig(t *testing.T) {
 					},
 					Data: map[string][]byte{
 						"client_secret": []byte("client-secret"),
+					},
+				},
+				&v1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "tls",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						"ca":          []byte("ca"),
+						"ca2":         []byte("ca2"),
+						"cert":        []byte("cert"),
+						"private-key": []byte("private-key"),
 					},
 				},
 			)
@@ -8111,7 +8206,7 @@ func TestScrapeConfigSpecConfigWithOpenStackSD(t *testing.T) {
 			scSpec: monitoringv1alpha1.ScrapeConfigSpec{
 				OpenStackSDConfigs: []monitoringv1alpha1.OpenStackSDConfig{
 					{
-						Role:             "Instance",
+						Role:             monitoringv1alpha1.OpenStackRoleInstance,
 						Region:           "region-1",
 						IdentityEndpoint: ptr.To("http://identity.example.com:5000/v2.0"),
 						Username:         ptr.To("nova-user-1"),
@@ -8134,7 +8229,7 @@ func TestScrapeConfigSpecConfigWithOpenStackSD(t *testing.T) {
 			scSpec: monitoringv1alpha1.ScrapeConfigSpec{
 				OpenStackSDConfigs: []monitoringv1alpha1.OpenStackSDConfig{
 					{
-						Role:   "Instance",
+						Role:   monitoringv1alpha1.OpenStackRoleInstance,
 						Region: "region-1",
 						ApplicationCredentialSecret: &v1.SecretKeySelector{
 							LocalObjectReference: v1.LocalObjectReference{
@@ -9159,13 +9254,13 @@ func TestAppendNameValidationScheme(t *testing.T) {
 	}{
 		{
 			name:                 "UTF8 nameValidationScheme withPrometheus Version 3",
-			version:              "v3.0.0-beta.0",
+			version:              "v3.0.0",
 			nameValidationScheme: ptr.To(monitoringv1.UTF8NameValidationScheme),
 			expectedCfg:          "NameValidationSchemeUTF8WithPrometheusV3.golden",
 		},
 		{
 			name:                 "Legacy nameValidationScheme with Prometheus Version 3",
-			version:              "v3.0.0-beta.0",
+			version:              "v3.0.0",
 			nameValidationScheme: ptr.To(monitoringv1.LegacyNameValidationScheme),
 			expectedCfg:          "NameValidationSchemeLegacyWithPrometheusV3.golden",
 		},
@@ -9296,12 +9391,44 @@ func TestOTLPConfig(t *testing.T) {
 			golden: "OTLPConfig_Config_keep_identifying_resource_attributes.golden",
 		},
 		{
-			name:    "Config KeepIdentifyingResourceAttributes with old version",
+			name:    "Config ConvertHistogramsToNHCB old version",
 			version: "v3.0.0",
 			otlpConfig: &monitoringv1.OTLPConfig{
 				KeepIdentifyingResourceAttributes: ptr.To(false),
 			},
 			golden: "OTLPConfig_Config_keep_identifying_resource_attributes_with_old_version.golden",
+		},
+		{
+			name:    "Config NoTranslation translation strategy",
+			version: "v3.4.0",
+			otlpConfig: &monitoringv1.OTLPConfig{
+				TranslationStrategy: ptr.To(monitoringv1.NoTranslation),
+			},
+			golden: "OTLPConfig_Config_translation_strategy_with_notranslation.golden",
+		},
+		{
+			name:    "Config NoTranslation translation strategye unsupported version",
+			version: "v3.0.0",
+			otlpConfig: &monitoringv1.OTLPConfig{
+				TranslationStrategy: ptr.To(monitoringv1.NoTranslation),
+			},
+			expectedErr: true,
+		},
+		{
+			name:    "Config ConvertHistogramsToNHCB",
+			version: "v3.4.0",
+			otlpConfig: &monitoringv1.OTLPConfig{
+				ConvertHistogramsToNHCB: ptr.To(true),
+			},
+			golden: "OTLPConfig_Config_convert_histograms_to_nhcb.golden",
+		},
+		{
+			name:    "Config ConvertHistogramsToNHCB with old version",
+			version: "v3.3.1",
+			otlpConfig: &monitoringv1.OTLPConfig{
+				ConvertHistogramsToNHCB: ptr.To(true),
+			},
+			golden: "OTLPConfig_Config_convert_histograms_to_nhcb_with_old_version.golden",
 		},
 	}
 	for _, tc := range testCases {
