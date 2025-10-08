@@ -2917,6 +2917,38 @@ NameValidationSchemeOptions
 <td>
 <em>(Optional)</em>
 <p>Specifies the validation scheme for metric and label names.</p>
+<p>It requires Prometheus &gt;= v2.55.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameEscapingScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameEscapingSchemeOptions">
+NameEscapingSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Specifies the character escaping scheme that will be requested when scraping
+for metric and label names that do not conform to the legacy Prometheus
+character set.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>convertClassicHistogramsToNHCB</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to convert all scraped classic histograms into a native
+histogram with custom buckets.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
 </td>
 </tr>
 <tr>
@@ -8412,6 +8444,38 @@ NameValidationSchemeOptions
 <td>
 <em>(Optional)</em>
 <p>Specifies the validation scheme for metric and label names.</p>
+<p>It requires Prometheus &gt;= v2.55.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameEscapingScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameEscapingSchemeOptions">
+NameEscapingSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Specifies the character escaping scheme that will be requested when scraping
+for metric and label names that do not conform to the legacy Prometheus
+character set.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>convertClassicHistogramsToNHCB</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to convert all scraped classic histograms into a native
+histogram with custom buckets.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
 </td>
 </tr>
 <tr>
@@ -10337,17 +10401,55 @@ int32
 </tr>
 </tbody>
 </table>
+<h3 id="monitoring.coreos.com/v1.NameEscapingSchemeOptions">NameEscapingSchemeOptions
+(<code>string</code> alias)</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.CommonPrometheusFields">CommonPrometheusFields</a>, <a href="#monitoring.coreos.com/v1alpha1.ScrapeConfigSpec">ScrapeConfigSpec</a>)
+</p>
+<div>
+<p>Specifies the character escaping scheme that will be applied when scraping
+for metric and label names that do not conform to the legacy Prometheus
+character set.</p>
+<p>Supported values are:</p>
+<ul>
+<li><code>AllowUTF8</code>, full UTF-8 support, no escaping needed.</li>
+<li><code>Underscores</code>, legacy-invalid characters are escaped to underscores.</li>
+<li><code>Dots</code>, dot characters are escaped to <code>_dot_</code>, underscores to <code>__</code>, and
+all other legacy-invalid characters to underscores.</li>
+<li><code>Values</code>, the string is prefixed by <code>U__</code> and all invalid characters are
+escaped to their unicode value, surrounded by underscores.</li>
+</ul>
+</div>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr><td><p>&#34;AllowUTF8&#34;</p></td>
+<td></td>
+</tr><tr><td><p>&#34;Dots&#34;</p></td>
+<td></td>
+</tr><tr><td><p>&#34;Underscores&#34;</p></td>
+<td></td>
+</tr><tr><td><p>&#34;Values&#34;</p></td>
+<td></td>
+</tr></tbody>
+</table>
 <h3 id="monitoring.coreos.com/v1.NameValidationSchemeOptions">NameValidationSchemeOptions
 (<code>string</code> alias)</h3>
 <p>
-(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.CommonPrometheusFields">CommonPrometheusFields</a>)
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.CommonPrometheusFields">CommonPrometheusFields</a>, <a href="#monitoring.coreos.com/v1alpha1.ScrapeConfigSpec">ScrapeConfigSpec</a>)
 </p>
 <div>
-<p>Specifies the validation scheme for metric and label names.
-Supported values are:
-* <code>UTF8NameValidationScheme</code> for UTF-8 support.
-* <code>LegacyNameValidationScheme</code> for letters, numbers, colons, and underscores.</p>
-<p>Note that <code>LegacyNameValidationScheme</code> cannot be used along with the OpenTelemetry <code>NoUTF8EscapingWithSuffixes</code> translation strategy (if enabled).</p>
+<p>Specifies the validation scheme for metric and label names.</p>
+<p>Supported values are:
+- <code>UTF8NameValidationScheme</code> for UTF-8 support.
+- <code>LegacyNameValidationScheme</code> for letters, numbers, colons, and underscores.</p>
+<p>Note that <code>LegacyNameValidationScheme</code> cannot be used along with the
+OpenTelemetry <code>NoUTF8EscapingWithSuffixes</code> translation strategy (if
+enabled).</p>
 </div>
 <table>
 <thead>
@@ -13415,6 +13517,38 @@ NameValidationSchemeOptions
 <td>
 <em>(Optional)</em>
 <p>Specifies the validation scheme for metric and label names.</p>
+<p>It requires Prometheus &gt;= v2.55.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameEscapingScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameEscapingSchemeOptions">
+NameEscapingSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Specifies the character escaping scheme that will be requested when scraping
+for metric and label names that do not conform to the legacy Prometheus
+character set.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>convertClassicHistogramsToNHCB</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to convert all scraped classic histograms into a native
+histogram with custom buckets.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
 </td>
 </tr>
 <tr>
@@ -20475,6 +20609,38 @@ NameValidationSchemeOptions
 <td>
 <em>(Optional)</em>
 <p>Specifies the validation scheme for metric and label names.</p>
+<p>It requires Prometheus &gt;= v2.55.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameEscapingScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameEscapingSchemeOptions">
+NameEscapingSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Specifies the character escaping scheme that will be requested when scraping
+for metric and label names that do not conform to the legacy Prometheus
+character set.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>convertClassicHistogramsToNHCB</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to convert all scraped classic histograms into a native
+histogram with custom buckets.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
 </td>
 </tr>
 <tr>
@@ -21704,6 +21870,36 @@ map[string][]Kubernetes core/v1.SecretKeySelector
 <p>ProxyConnectHeader optionally specifies headers to send to
 proxies during CONNECT requests.</p>
 <p>It requires Prometheus &gt;= v2.43.0, Alertmanager &gt;= v0.25.0 or Thanos &gt;= v0.32.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameValidationScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameValidationSchemeOptions">
+NameValidationSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Specifies the validation scheme for metric and label names.</p>
+<p>It requires Prometheus &gt;= v3.0.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameEscapingScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameEscapingSchemeOptions">
+NameEscapingSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Metric name escaping mode to request through content negotiation.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
 </td>
 </tr>
 <tr>
@@ -28839,6 +29035,38 @@ NameValidationSchemeOptions
 <td>
 <em>(Optional)</em>
 <p>Specifies the validation scheme for metric and label names.</p>
+<p>It requires Prometheus &gt;= v2.55.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameEscapingScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameEscapingSchemeOptions">
+NameEscapingSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Specifies the character escaping scheme that will be requested when scraping
+for metric and label names that do not conform to the legacy Prometheus
+character set.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>convertClassicHistogramsToNHCB</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to convert all scraped classic histograms into a native
+histogram with custom buckets.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
 </td>
 </tr>
 <tr>
@@ -31259,6 +31487,36 @@ map[string][]Kubernetes core/v1.SecretKeySelector
 <p>ProxyConnectHeader optionally specifies headers to send to
 proxies during CONNECT requests.</p>
 <p>It requires Prometheus &gt;= v2.43.0, Alertmanager &gt;= v0.25.0 or Thanos &gt;= v0.32.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameValidationScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameValidationSchemeOptions">
+NameValidationSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Specifies the validation scheme for metric and label names.</p>
+<p>It requires Prometheus &gt;= v3.0.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameEscapingScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameEscapingSchemeOptions">
+NameEscapingSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Metric name escaping mode to request through content negotiation.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
 </td>
 </tr>
 <tr>

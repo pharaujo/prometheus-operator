@@ -6590,6 +6590,70 @@ func TestScrapeConfigSpecConfig(t *testing.T) {
 			},
 			golden: "ScrapeConfigSpecConfig_WithOAuth_Unsupported.golden",
 		},
+		{
+			name:    "config_NameValidationScheme_utf8",
+			version: "v3.0.0",
+			scSpec: monitoringv1alpha1.ScrapeConfigSpec{
+				NameValidationScheme: ptr.To(monitoringv1.UTF8NameValidationScheme),
+			},
+			golden: "NameValidationScheme_utf8.golden",
+		},
+		{
+			name:    "config_NameValidationScheme_legacy",
+			version: "v3.0.0",
+			scSpec: monitoringv1alpha1.ScrapeConfigSpec{
+				NameValidationScheme: ptr.To(monitoringv1.LegacyNameValidationScheme),
+			},
+			golden: "NameValidationScheme_legacy.golden",
+		},
+		{
+			name:    "config_NameValidationScheme_unsupported",
+			version: "v2.55.0",
+			scSpec: monitoringv1alpha1.ScrapeConfigSpec{
+				NameValidationScheme: ptr.To(monitoringv1.UTF8NameValidationScheme),
+			},
+			golden: "NameValidationScheme_unsupported.golden",
+		},
+		{
+			name:    "config_NameEscapingScheme_AllowUTF8",
+			version: "v3.4.0",
+			scSpec: monitoringv1alpha1.ScrapeConfigSpec{
+				NameEscapingScheme: ptr.To(monitoringv1.AllowUTF8NameEscapingScheme),
+			},
+			golden: "NameEscapingScheme_AllowUTF8.golden",
+		},
+		{
+			name:    "config_NameEscapingScheme_Underscores",
+			version: "v3.4.0",
+			scSpec: monitoringv1alpha1.ScrapeConfigSpec{
+				NameEscapingScheme: ptr.To(monitoringv1.UnderscoresNameEscapingScheme),
+			},
+			golden: "NameEscapingScheme_Underscores.golden",
+		},
+		{
+			name:    "config_NameEscapingScheme_Dots",
+			version: "v3.4.0",
+			scSpec: monitoringv1alpha1.ScrapeConfigSpec{
+				NameEscapingScheme: ptr.To(monitoringv1.DotsNameEscapingScheme),
+			},
+			golden: "NameEscapingScheme_Dots.golden",
+		},
+		{
+			name:    "config_NameEscapingScheme_Values",
+			version: "v3.4.0",
+			scSpec: monitoringv1alpha1.ScrapeConfigSpec{
+				NameEscapingScheme: ptr.To(monitoringv1.ValuesNameEscapingScheme),
+			},
+			golden: "NameEscapingScheme_Values.golden",
+		},
+		{
+			name:    "config_NameEscapingScheme_Unsupported",
+			version: "v3.3.0",
+			scSpec: monitoringv1alpha1.ScrapeConfigSpec{
+				NameEscapingScheme: ptr.To(monitoringv1.ValuesNameEscapingScheme),
+			},
+			golden: "NameEscapingScheme_Unsupported.golden",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			scs := map[string]*monitoringv1alpha1.ScrapeConfig{
@@ -9307,6 +9371,121 @@ func TestAppendNameValidationScheme(t *testing.T) {
 		})
 	}
 }
+
+func TestAppendNameEscapingScheme(t *testing.T) {
+	testCases := []struct {
+		name               string
+		version            string
+		nameEscapingScheme *monitoringv1.NameEscapingSchemeOptions
+		expectedCfg        string
+	}{
+		{
+			name:               "AllowUTF8 nameEscapingScheme withPrometheus Version 3",
+			version:            "v3.4.0",
+			nameEscapingScheme: ptr.To(monitoringv1.AllowUTF8NameEscapingScheme),
+			expectedCfg:        "NameEscapingSchemeUTF8WithPrometheusV3.golden",
+		},
+		{
+			name:               "Underscores nameEscapingScheme with Prometheus Version 3",
+			version:            "v3.4.0",
+			nameEscapingScheme: ptr.To(monitoringv1.UnderscoresNameEscapingScheme),
+			expectedCfg:        "NameEscapingSchemeUnderscoresWithPrometheusV3.golden",
+		},
+		{
+			name:               "Underscores nameEscapingScheme with Prometheus Version 3",
+			version:            "v2.55.0",
+			nameEscapingScheme: ptr.To(monitoringv1.UnderscoresNameEscapingScheme),
+			expectedCfg:        "NameEscapingSchemeUnderscoresWithPrometheusLowerThanV3.golden",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			p := defaultPrometheus()
+			if tc.version != "" {
+				p.Spec.CommonPrometheusFields.Version = tc.version
+			}
+			if tc.nameEscapingScheme != nil {
+				p.Spec.CommonPrometheusFields.NameEscapingScheme = tc.nameEscapingScheme
+			}
+
+			cg := mustNewConfigGenerator(t, p)
+			cfg, err := cg.GenerateServerConfiguration(
+				p,
+				nil,
+				nil,
+				nil,
+				nil,
+				&assets.StoreBuilder{},
+				nil,
+				nil,
+				nil,
+				nil,
+			)
+			require.NoError(t, err)
+
+			golden.Assert(t, string(cfg), tc.expectedCfg)
+		})
+	}
+}
+
+func TestAppendConvertClassicHistogramsToNHCB(t *testing.T) {
+	testCases := []struct {
+		name                           string
+		version                        string
+		convertClassicHistogramsToNHCB *bool
+		expectedCfg                    string
+	}{
+		{
+			name:                           "ConvertClassicHistogramsToNHCB true with Prometheus Version 3.4",
+			version:                        "v3.4.0",
+			convertClassicHistogramsToNHCB: ptr.To(true),
+			expectedCfg:                    "ConvertClassicHistogramsToNHCBTrueWithPrometheusV3.golden",
+		},
+		{
+			name:                           "ConvertClassicHistogramsToNHCB false with Prometheus Version 3.4",
+			version:                        "v3.4.0",
+			convertClassicHistogramsToNHCB: ptr.To(false),
+			expectedCfg:                    "ConvertClassicHistogramsToNHCBFalseWithPrometheusV3.golden",
+		},
+		{
+			name:                           "ConvertClassicHistogramsToNHCB true with Prometheus Version 2",
+			version:                        "v2.55.0",
+			convertClassicHistogramsToNHCB: ptr.To(true),
+			expectedCfg:                    "ConvertClassicHistogramsToNHCBTrueWithPrometheusLowerThanV3.golden",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			p := defaultPrometheus()
+			if tc.version != "" {
+				p.Spec.CommonPrometheusFields.Version = tc.version
+			}
+			if tc.convertClassicHistogramsToNHCB != nil {
+				p.Spec.CommonPrometheusFields.ConvertClassicHistogramsToNHCB = tc.convertClassicHistogramsToNHCB
+			}
+
+			cg := mustNewConfigGenerator(t, p)
+			cfg, err := cg.GenerateServerConfiguration(
+				p,
+				nil,
+				nil,
+				nil,
+				nil,
+				&assets.StoreBuilder{},
+				nil,
+				nil,
+				nil,
+				nil,
+			)
+			require.NoError(t, err)
+
+			golden.Assert(t, string(cfg), tc.expectedCfg)
+		})
+	}
+}
+
 func TestOTLPConfig(t *testing.T) {
 	testCases := []struct {
 		otlpConfig    *monitoringv1.OTLPConfig

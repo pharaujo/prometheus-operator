@@ -4,7 +4,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-    operator.prometheus.io/version: 0.82.2
+    operator.prometheus.io/version: 0.83.0
   name: prometheuses.monitoring.coreos.com
 spec:
   group: monitoring.coreos.com
@@ -3583,6 +3583,13 @@ spec:
                   - name
                   type: object
                 type: array
+              convertClassicHistogramsToNHCB:
+                description: |-
+                  Whether to convert all scraped classic histograms into a native
+                  histogram with custom buckets.
+
+                  It requires Prometheus >= v3.4.0.
+                type: boolean
               disableCompaction:
                 description: |-
                   When true, the Prometheus compaction is disabled.
@@ -5513,9 +5520,24 @@ spec:
                   enabling the StatefulSetMinReadySeconds feature gate.
                 format: int32
                 type: integer
+              nameEscapingScheme:
+                description: |-
+                  Specifies the character escaping scheme that will be requested when scraping
+                  for metric and label names that do not conform to the legacy Prometheus
+                  character set.
+
+                  It requires Prometheus >= v3.4.0.
+                enum:
+                - AllowUTF8
+                - Underscores
+                - Dots
+                - Values
+                type: string
               nameValidationScheme:
-                description: Specifies the validation scheme for metric and label
-                  names.
+                description: |-
+                  Specifies the validation scheme for metric and label names.
+
+                  It requires Prometheus >= v2.55.0.
                 enum:
                 - UTF8
                 - Legacy
