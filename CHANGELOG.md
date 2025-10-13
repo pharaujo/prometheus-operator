@@ -1,3 +1,54 @@
+## 0.85.0 / 2025-08-21
+
+* [CHANGE/BUGFIX] Add the `--watch-referenced-objects-in-all-namespaces` CLI argument. When enabled, the operator watches for secrets and configmaps in both workload and configuration resources. It ensures that reconciliation happens when a referenced secret/configmap is updated. #7615
+* [FEATURE] Add `resendDelay` field to the ThanosRuler CRD. #7753
+* [FEATURE] Add `ruleGracePeriod` field to the ThanosRuler CRD. #7750
+* [FEATURE] Add `enableFeatures` field to the ThanosRuler CRD for enabling feature flags. #7754
+* [FEATURE] Add `params` field to the Probe CRD. #7755
+* [FEATURE] Add `hostUsers` field to the Prometheus, PrometheusAgent, Alertmanager and ThanosRuler CRDs. #7768 #7769 #7771
+* [FEATURE] Add `promoteAllResourceAttributes` and `ignoreResourceAttributes` fields to Prometheus and PrometheusAgent CRDs. #7669
+* [FEATURE] Add `-kubelet-sync-period` argument to customize the kubelet controller's synchronization interval. #7762
+* [FEATURE] Add Rocket.Chat receiver to AlertmanagerConfig CRD. #7328
+* [ENHANCEMENT] Add well-known Kubernetes labels to workload objects managed by the operator (StatefulSet and DaemonSet). #7786
+* [ENHANCEMENT] Add workqueue metrics. #7776
+* [ENHANCEMENT] Optimize statefulset informers. #7766
+* [BUGFIX] Use named ports for the managed Alertmanager service. #7517
+* [BUGFIX] Support `send_resolved` field for JIRA and RocketChat receivers in the Alertmanager configuration. #7772
+
+## 0.84.1 / 2025-08-06
+
+* [CHANGE/BUGFIX] Disable compaction of overlapping blocks when Thanos sidecar is configured with object storage. #7747
+* [BUGFIX] Log only selected resources which are valid. #7749
+
+## 0.84.0 / 2025-07-14
+
+* [FEATURE] Add `telegram` field to AlertManager CRD global configuration. #7631
+* [FEATURE] Add `jira` field to AlertManager CRD global configuration. #7626
+* [FEATURE] Add `webex` field to AlertManager CRD global configuration. #7632
+* [FEATURE] Add `victorops` field to Alertmanager CRD global configuration. #7654
+* [FEATURE] Add `wechat` field to Alertmanager CRD global configuration. #7627
+* [FEATURE] Add `ruleQueryOffset` field to ThanosRuler CRD. #7580
+* [FEATURE] Add `ruleConcurrentEval` field to ThanosRuler CRD. #7659
+* [FEATURE] Add `ruleOutageTolerance` field to ThanosRuler CRD. #7672
+* [FEATURE] Add ProxyConfig fields to ServiceMonitor. #7647
+* [FEATURE] Add ProxyConfig fields to Probe. #7660
+* [FEATURE] Add ProxyConfig fields to Prometheus `apiServerConfig`. #7670
+* [FEATURE] Add `scrapeClassicHistograms` field to Prometheus. #7667
+* [FEATURE] Add `labelSelector` field to HetznerSDConfig in the ScrapeConfig CRD. #7675
+* [FEATURE] Add startupProbe to config-reloader. #7575
+* [ENHANCEMENT] Set `reason: ConfigurationUnmanaged` in the `Reconciled` condition when the operator doesn't managed the Prometheus configuration. #7661
+* [ENHANCEMENT] AlertManager `matchType` defaults to `=` if neither `matchType` nor `regex` is set, and `=~` if `regex: true` is set without matchType. #7592
+
+## 0.83.0 / 2025-05-30
+
+* [FEATURE] Add `limits` option for Alertmanager silences. #7478
+* [FEATURE] Add `NoTranslation` as a `translationStrategy` option to OTLP config. #7539
+* [FEATURE] Add `nameEscapingScheme` field to Prometheus CRDs. #7538
+* [FEATURE] Add `convertHistogramsToNHCB` field to OTLPConfig. #7533
+* [FEATURE] Add `convert_classic_histograms_to_nhcb` option to Prometheus global config. #7543
+* [FEATURE] Add new `MetricNameEscapingScheme` and `MetricNameValidationScheme` parameters to ScrapeConfig. #7555
+* [ENHANCEMENT] Do not insert sharding relabeling in scrapeConfigs if already present.  #7421
+
 ## 0.82.2 / 2025-05-12
 
 * [BUGFIX] Fix Alertmanager peer discovery for Alertmanager when using custom service name. #7512

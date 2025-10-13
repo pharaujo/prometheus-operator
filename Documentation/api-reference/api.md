@@ -208,7 +208,7 @@ Deprecated: use &lsquo;image&rsquo; instead.</p>
 <td>
 <p>An optional list of references to secrets in the same namespace
 to use for pulling prometheus and alertmanager images from registries
-see <a href="http://kubernetes.io/docs/user-guide/images#specifying-imagepullsecrets-on-a-pod">http://kubernetes.io/docs/user-guide/images#specifying-imagepullsecrets-on-a-pod</a></p>
+see <a href="https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/">https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/</a></p>
 </td>
 </tr>
 <tr>
@@ -405,7 +405,7 @@ bool
 </td>
 <td>
 <p>If set to true all actions on the underlying managed objects are not
-goint to be performed, except for delete actions.</p>
+going to be performed, except for delete actions.</p>
 </td>
 </tr>
 <tr>
@@ -762,15 +762,14 @@ process incoming alerts.</p>
 <td>
 <code>minReadySeconds</code><br/>
 <em>
-uint32
+int32
 </em>
 </td>
 <td>
 <em>(Optional)</em>
 <p>Minimum number of seconds for which a newly created pod should be ready
-without any of its container crashing for it to be considered available.
-Defaults to 0 (pod will be considered available as soon as it is ready)
-This is an alpha field from kubernetes 1.22 until 1.24 which requires enabling the StatefulSetMinReadySeconds feature gate.</p>
+without any of its container crashing for it to be considered available.</p>
+<p>If unset, pods will be considered available as soon as they are ready.</p>
 </td>
 </tr>
 <tr>
@@ -904,6 +903,21 @@ int64
 Value must be non-negative integer. The value zero indicates stop immediately via
 the kill signal (no opportunity to shut down) which may lead to data corruption.</p>
 <p>Defaults to 120 seconds.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>hostUsers</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HostUsers supports the user space in Kubernetes.</p>
+<p>More info: <a href="https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/">https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/</a></p>
+<p>The feature requires at least Kubernetes 1.28 with the <code>UserNamespacesSupport</code> feature gate enabled.
+Starting Kubernetes 1.33, the feature is enabled by default.</p>
 </td>
 </tr>
 </table>
@@ -1187,6 +1201,7 @@ bool
 <em>(Optional)</em>
 <p>Whether to scrape a classic histogram that is also exposed as a native histogram.
 It requires Prometheus &gt;= v2.45.0.</p>
+<p>Notice: <code>scrapeClassicHistograms</code> corresponds to the <code>always_scrape_classic_histograms</code> field in the Prometheus configuration.</p>
 </td>
 </tr>
 <tr>
@@ -1624,6 +1639,7 @@ bool
 <em>(Optional)</em>
 <p>Whether to scrape a classic histogram that is also exposed as a native histogram.
 It requires Prometheus &gt;= v2.45.0.</p>
+<p>Notice: <code>scrapeClassicHistograms</code> corresponds to the <code>always_scrape_classic_histograms</code> field in the Prometheus configuration.</p>
 </td>
 </tr>
 <tr>
@@ -1693,6 +1709,22 @@ string
 <td>
 <em>(Optional)</em>
 <p>The scrape class to apply.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>params</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.ProbeParam">
+[]ProbeParam
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The list of HTTP query parameters for the scrape.
+Please note that the <code>.spec.module</code> field takes precedence over the <code>module</code> parameter from this list when both are defined.
+The module name must be added using Module under ProbeSpec.</p>
 </td>
 </tr>
 </table>
@@ -2917,22 +2949,66 @@ NameValidationSchemeOptions
 <td>
 <em>(Optional)</em>
 <p>Specifies the validation scheme for metric and label names.</p>
+<p>It requires Prometheus &gt;= v2.55.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameEscapingScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameEscapingSchemeOptions">
+NameEscapingSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Specifies the character escaping scheme that will be requested when scraping
+for metric and label names that do not conform to the legacy Prometheus
+character set.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>convertClassicHistogramsToNHCB</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to convert all scraped classic histograms into a native
+histogram with custom buckets.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>scrapeClassicHistograms</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to scrape a classic histogram that is also exposed as a native histogram.</p>
+<p>Notice: <code>scrapeClassicHistograms</code> corresponds to the <code>always_scrape_classic_histograms</code> field in the Prometheus configuration.</p>
+<p>It requires Prometheus &gt;= v3.5.0.</p>
 </td>
 </tr>
 <tr>
 <td>
 <code>minReadySeconds</code><br/>
 <em>
-uint32
+int32
 </em>
 </td>
 <td>
 <em>(Optional)</em>
 <p>Minimum number of seconds for which a newly created Pod should be ready
-without any of its container crashing for it to be considered available.
-Defaults to 0 (pod will be considered available as soon as it is ready)</p>
-<p>This is an alpha field from kubernetes 1.22 until 1.24 which requires
-enabling the StatefulSetMinReadySeconds feature gate.</p>
+without any of its container crashing for it to be considered available.</p>
+<p>If unset, pods will be considered available as soon as they are ready.</p>
 </td>
 </tr>
 <tr>
@@ -3011,7 +3087,7 @@ bool
 <td>
 <p>Use the host&rsquo;s network namespace if true.</p>
 <p>Make sure to understand the security implications if you want to enable
-it (<a href="https://kubernetes.io/docs/concepts/configuration/overview/">https://kubernetes.io/docs/concepts/configuration/overview/</a>).</p>
+it (<a href="https://kubernetes.io/docs/concepts/configuration/overview/">https://kubernetes.io/docs/concepts/configuration/overview/</a> ).</p>
 <p>When hostNetwork is enabled, this will set the DNS policy to
 <code>ClusterFirstWithHostNet</code> automatically (unless <code>.spec.DNSPolicy</code> is set
 to a different value).</p>
@@ -3292,6 +3368,21 @@ int64
 Value must be non-negative integer. The value zero indicates stop immediately via
 the kill signal (no opportunity to shut down) which may lead to data corruption.</p>
 <p>Defaults to 600 seconds.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>hostUsers</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HostUsers supports the user space in Kubernetes.</p>
+<p>More info: <a href="https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/">https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/</a></p>
+<p>The feature requires at least Kubernetes 1.28 with the <code>UserNamespacesSupport</code> feature gate enabled.
+Starting Kubernetes 1.33, the feature is enabled by default.</p>
 </td>
 </tr>
 <tr>
@@ -4019,6 +4110,7 @@ bool
 <em>(Optional)</em>
 <p>Whether to scrape a classic histogram that is also exposed as a native histogram.
 It requires Prometheus &gt;= v2.45.0.</p>
+<p>Notice: <code>scrapeClassicHistograms</code> corresponds to the <code>always_scrape_classic_histograms</code> field in the Prometheus configuration.</p>
 </td>
 </tr>
 <tr>
@@ -4123,6 +4215,24 @@ of uncompressed response body that will be accepted by Prometheus.</p>
 </td>
 </tr>
 </table>
+</td>
+</tr>
+<tr>
+<td>
+<code>status</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.ConfigResourceStatus">
+ConfigResourceStatus
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>This Status subresource is under active development and is updated only when the
+&ldquo;StatusForConfigurationResources&rdquo; feature gate is enabled.</p>
+<p>Most recent observed status of the ServiceMonitor. Read-only.
+More info:
+<a href="https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#spec-and-status">https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#spec-and-status</a></p>
 </td>
 </tr>
 </tbody>
@@ -4726,6 +4836,79 @@ Duration
 </tr>
 <tr>
 <td>
+<code>resendDelay</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.Duration">
+Duration
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Minimum amount of time to wait before resending an alert to Alertmanager.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>ruleOutageTolerance</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.Duration">
+Duration
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Max time to tolerate prometheus outage for restoring &ldquo;for&rdquo; state of alert.
+It requires Thanos &gt;= v0.30.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>ruleQueryOffset</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.Duration">
+Duration
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The default rule group&rsquo;s query offset duration to use.
+It requires Thanos &gt;= v0.38.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>ruleConcurrentEval</code><br/>
+<em>
+int32
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>How many rules can be evaluated concurrently.
+It requires Thanos &gt;= v0.37.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>ruleGracePeriod</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.Duration">
+Duration
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Minimum duration between alert and restored &ldquo;for&rdquo; state.
+This is maintained only for alerts with configured &ldquo;for&rdquo; time greater than grace period.
+It requires Thanos &gt;= v0.30.0.</p>
+</td>
+</tr>
+<tr>
+<td>
 <code>retention</code><br/>
 <em>
 <a href="#monitoring.coreos.com/v1.Duration">
@@ -4903,15 +5086,14 @@ Maps to the &lsquo;&ndash;alert.query-url&rsquo; CLI arg.</p>
 <td>
 <code>minReadySeconds</code><br/>
 <em>
-uint32
+int32
 </em>
 </td>
 <td>
 <em>(Optional)</em>
 <p>Minimum number of seconds for which a newly created pod should be ready
-without any of its container crashing for it to be considered available.
-Defaults to 0 (pod will be considered available as soon as it is ready)
-This is an alpha field from kubernetes 1.22 until 1.24 which requires enabling the StatefulSetMinReadySeconds feature gate.</p>
+without any of its container crashing for it to be considered available.</p>
+<p>If unset, pods will be considered available as soon as they are ready.</p>
 </td>
 </tr>
 <tr>
@@ -5027,6 +5209,40 @@ int64
 Value must be non-negative integer. The value zero indicates stop immediately via
 the kill signal (no opportunity to shut down) which may lead to data corruption.</p>
 <p>Defaults to 120 seconds.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>enableFeatures</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.EnableFeature">
+[]EnableFeature
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Enable access to Thanos Ruler feature flags. By default, no features are enabled.</p>
+<p>Enabling features which are disabled by default is entirely outside the
+scope of what the maintainers will support and by doing so, you accept
+that this behaviour may break at any time without notice.</p>
+<p>For more information see <a href="https://thanos.io/tip/components/rule.md/">https://thanos.io/tip/components/rule.md/</a></p>
+<p>It requires Thanos &gt;= 0.39.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>hostUsers</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HostUsers supports the user space in Kubernetes.</p>
+<p>More info: <a href="https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/">https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/</a></p>
+<p>The feature requires at least Kubernetes 1.28 with the <code>UserNamespacesSupport</code> feature gate enabled.
+Starting Kubernetes 1.33, the feature is enabled by default.</p>
 </td>
 </tr>
 </table>
@@ -5148,6 +5364,62 @@ string
 <p><em>Warning: this field shouldn&rsquo;t be used because the token value appears
 in clear-text. Prefer using <code>authorization</code>.</em></p>
 <p>Deprecated: this will be removed in a future release.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>proxyUrl</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p><code>proxyURL</code> defines the HTTP proxy server to use.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>noProxy</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p><code>noProxy</code> is a comma-separated string that can contain IPs, CIDR notation, domain names
+that should be excluded from proxying. IP and domain names can
+contain port numbers.</p>
+<p>It requires Prometheus &gt;= v2.43.0, Alertmanager &gt;= v0.25.0 or Thanos &gt;= v0.32.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>proxyFromEnvironment</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to use the proxy configuration defined by environment variables (HTTP_PROXY, HTTPS_PROXY, and NO_PROXY).</p>
+<p>It requires Prometheus &gt;= v2.43.0, Alertmanager &gt;= v0.25.0 or Thanos &gt;= v0.32.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>proxyConnectHeader</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#secretkeyselector-v1-core">
+map[string][]Kubernetes core/v1.SecretKeySelector
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>ProxyConnectHeader optionally specifies headers to send to
+proxies during CONNECT requests.</p>
+<p>It requires Prometheus &gt;= v2.43.0, Alertmanager &gt;= v0.25.0 or Thanos &gt;= v0.32.0.</p>
 </td>
 </tr>
 </tbody>
@@ -5280,6 +5552,12 @@ object process all incoming alerts.</p>
 <td><p>With <code>OnNamespace</code>, the route and inhibition rules of an
 AlertmanagerConfig object only process alerts that have a <code>namespace</code>
 label equal to the namespace of the object.</p>
+</td>
+</tr><tr><td><p>&#34;OnNamespaceExceptForAlertmanagerNamespace&#34;</p></td>
+<td><p>With <code>OnNamespaceExceptForAlertmanagerNamespace</code>, the route and inhibition rules of an
+AlertmanagerConfig object only process alerts that have a <code>namespace</code>
+label equal to the namespace of the object, unless the AlertmanagerConfig object
+is in the same namespace as the Alertmanager object, where it will process all alerts.</p>
 </td>
 </tr></tbody>
 </table>
@@ -5743,6 +6021,85 @@ string
 <p>The default Pagerduty URL.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>telegram</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.GlobalTelegramConfig">
+GlobalTelegramConfig
+</a>
+</em>
+</td>
+<td>
+<p>The default Telegram config</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>jira</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.GlobalJiraConfig">
+GlobalJiraConfig
+</a>
+</em>
+</td>
+<td>
+<p>The default configuration for Jira.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>victorops</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.GlobalVictorOpsConfig">
+GlobalVictorOpsConfig
+</a>
+</em>
+</td>
+<td>
+<p>The default configuration for VictorOps.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>rocketChat</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.GlobalRocketChatConfig">
+GlobalRocketChatConfig
+</a>
+</em>
+</td>
+<td>
+<p>The default configuration for Rocket Chat.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>webex</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.GlobalWebexConfig">
+GlobalWebexConfig
+</a>
+</em>
+</td>
+<td>
+<p>The default configuration for Jira.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>wechat</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.GlobalWeChatConfig">
+GlobalWeChatConfig
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The default WeChat Config</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="monitoring.coreos.com/v1.AlertmanagerLimitsSpec">AlertmanagerLimitsSpec
@@ -5920,7 +6277,7 @@ Deprecated: use &lsquo;image&rsquo; instead.</p>
 <td>
 <p>An optional list of references to secrets in the same namespace
 to use for pulling prometheus and alertmanager images from registries
-see <a href="http://kubernetes.io/docs/user-guide/images#specifying-imagepullsecrets-on-a-pod">http://kubernetes.io/docs/user-guide/images#specifying-imagepullsecrets-on-a-pod</a></p>
+see <a href="https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/">https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/</a></p>
 </td>
 </tr>
 <tr>
@@ -6117,7 +6474,7 @@ bool
 </td>
 <td>
 <p>If set to true all actions on the underlying managed objects are not
-goint to be performed, except for delete actions.</p>
+going to be performed, except for delete actions.</p>
 </td>
 </tr>
 <tr>
@@ -6474,15 +6831,14 @@ process incoming alerts.</p>
 <td>
 <code>minReadySeconds</code><br/>
 <em>
-uint32
+int32
 </em>
 </td>
 <td>
 <em>(Optional)</em>
 <p>Minimum number of seconds for which a newly created pod should be ready
-without any of its container crashing for it to be considered available.
-Defaults to 0 (pod will be considered available as soon as it is ready)
-This is an alpha field from kubernetes 1.22 until 1.24 which requires enabling the StatefulSetMinReadySeconds feature gate.</p>
+without any of its container crashing for it to be considered available.</p>
+<p>If unset, pods will be considered available as soon as they are ready.</p>
 </td>
 </tr>
 <tr>
@@ -6616,6 +6972,21 @@ int64
 Value must be non-negative integer. The value zero indicates stop immediately via
 the kill signal (no opportunity to shut down) which may lead to data corruption.</p>
 <p>Defaults to 120 seconds.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>hostUsers</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HostUsers supports the user space in Kubernetes.</p>
+<p>More info: <a href="https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/">https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/</a></p>
+<p>The feature requires at least Kubernetes 1.28 with the <code>UserNamespacesSupport</code> feature gate enabled.
+Starting Kubernetes 1.33, the feature is enabled by default.</p>
 </td>
 </tr>
 </tbody>
@@ -8412,22 +8783,66 @@ NameValidationSchemeOptions
 <td>
 <em>(Optional)</em>
 <p>Specifies the validation scheme for metric and label names.</p>
+<p>It requires Prometheus &gt;= v2.55.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameEscapingScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameEscapingSchemeOptions">
+NameEscapingSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Specifies the character escaping scheme that will be requested when scraping
+for metric and label names that do not conform to the legacy Prometheus
+character set.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>convertClassicHistogramsToNHCB</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to convert all scraped classic histograms into a native
+histogram with custom buckets.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>scrapeClassicHistograms</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to scrape a classic histogram that is also exposed as a native histogram.</p>
+<p>Notice: <code>scrapeClassicHistograms</code> corresponds to the <code>always_scrape_classic_histograms</code> field in the Prometheus configuration.</p>
+<p>It requires Prometheus &gt;= v3.5.0.</p>
 </td>
 </tr>
 <tr>
 <td>
 <code>minReadySeconds</code><br/>
 <em>
-uint32
+int32
 </em>
 </td>
 <td>
 <em>(Optional)</em>
 <p>Minimum number of seconds for which a newly created Pod should be ready
-without any of its container crashing for it to be considered available.
-Defaults to 0 (pod will be considered available as soon as it is ready)</p>
-<p>This is an alpha field from kubernetes 1.22 until 1.24 which requires
-enabling the StatefulSetMinReadySeconds feature gate.</p>
+without any of its container crashing for it to be considered available.</p>
+<p>If unset, pods will be considered available as soon as they are ready.</p>
 </td>
 </tr>
 <tr>
@@ -8506,7 +8921,7 @@ bool
 <td>
 <p>Use the host&rsquo;s network namespace if true.</p>
 <p>Make sure to understand the security implications if you want to enable
-it (<a href="https://kubernetes.io/docs/concepts/configuration/overview/">https://kubernetes.io/docs/concepts/configuration/overview/</a>).</p>
+it (<a href="https://kubernetes.io/docs/concepts/configuration/overview/">https://kubernetes.io/docs/concepts/configuration/overview/</a> ).</p>
 <p>When hostNetwork is enabled, this will set the DNS policy to
 <code>ClusterFirstWithHostNet</code> automatically (unless <code>.spec.DNSPolicy</code> is set
 to a different value).</p>
@@ -8789,6 +9204,21 @@ the kill signal (no opportunity to shut down) which may lead to data corruption.
 <p>Defaults to 600 seconds.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>hostUsers</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HostUsers supports the user space in Kubernetes.</p>
+<p>More info: <a href="https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/">https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/</a></p>
+<p>The feature requires at least Kubernetes 1.28 with the <code>UserNamespacesSupport</code> feature gate enabled.
+Starting Kubernetes 1.33, the feature is enabled by default.</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="monitoring.coreos.com/v1.Condition">Condition
@@ -8891,7 +9321,7 @@ instance.</p>
 <h3 id="monitoring.coreos.com/v1.ConditionStatus">ConditionStatus
 (<code>string</code> alias)</h3>
 <p>
-(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.Condition">Condition</a>)
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.Condition">Condition</a>, <a href="#monitoring.coreos.com/v1.ConfigResourceCondition">ConfigResourceCondition</a>)
 </p>
 <div>
 </div>
@@ -8915,7 +9345,7 @@ instance.</p>
 <h3 id="monitoring.coreos.com/v1.ConditionType">ConditionType
 (<code>string</code> alias)</h3>
 <p>
-(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.Condition">Condition</a>)
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.Condition">Condition</a>, <a href="#monitoring.coreos.com/v1.ConfigResourceCondition">ConfigResourceCondition</a>)
 </p>
 <div>
 </div>
@@ -8926,7 +9356,15 @@ instance.</p>
 <th>Description</th>
 </tr>
 </thead>
-<tbody><tr><td><p>&#34;Available&#34;</p></td>
+<tbody><tr><td><p>&#34;Accepted&#34;</p></td>
+<td><p>Accepted indicates whether the workload controller has successfully accepted
+the configuration resource and updated the configuration of the workload accordingly.
+The possible status values for this condition type are:
+- True: the configuration resource was successfully accepted by the controller and written to the configuration secret.
+- False: the controller rejected the configuration due to an error.
+- Unknown: the operator couldn&rsquo;t determine the condition status.</p>
+</td>
+</tr><tr><td><p>&#34;Available&#34;</p></td>
 <td><p>Available indicates whether enough pods are ready to provide the
 service.
 The possible status values for this condition type are:
@@ -8944,6 +9382,136 @@ The possible status values for this condition type are:
 - Unknown: the operator couldn&rsquo;t determine the condition status.</p>
 </td>
 </tr></tbody>
+</table>
+<h3 id="monitoring.coreos.com/v1.ConfigResourceCondition">ConfigResourceCondition
+</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.WorkloadBinding">WorkloadBinding</a>)
+</p>
+<div>
+<p>ConfigResourceCondition describes the status of configuration resources linked to Prometheus, PrometheusAgent, Alertmanager, or ThanosRuler.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>type</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.ConditionType">
+ConditionType
+</a>
+</em>
+</td>
+<td>
+<p>Type of the condition being reported.
+Currently, only &ldquo;Accepted&rdquo; is supported.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>status</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.ConditionStatus">
+ConditionStatus
+</a>
+</em>
+</td>
+<td>
+<p>Status of the condition.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>lastTransitionTime</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#time-v1-meta">
+Kubernetes meta/v1.Time
+</a>
+</em>
+</td>
+<td>
+<p>LastTransitionTime is the time of the last update to the current status property.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>reason</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Reason for the condition&rsquo;s last transition.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>message</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Human-readable message indicating details for the condition&rsquo;s last transition.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>observedGeneration</code><br/>
+<em>
+int64
+</em>
+</td>
+<td>
+<p>ObservedGeneration represents the .metadata.generation that the
+condition was set based upon. For instance, if <code>.metadata.generation</code> is
+currently 12, but the <code>.status.conditions[].observedGeneration</code> is 9, the
+condition is out of date with respect to the current state of the object.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="monitoring.coreos.com/v1.ConfigResourceStatus">ConfigResourceStatus
+</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.ServiceMonitor">ServiceMonitor</a>)
+</p>
+<div>
+<p>ConfigResourceStatus is the most recent observed status of the Configuration Resource (ServiceMonitor, PodMonitor and Probes). Read-only.
+More info:
+<a href="https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#spec-and-status">https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#spec-and-status</a></p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>bindings</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.WorkloadBinding">
+[]WorkloadBinding
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The list of workload resources (Prometheus or PrometheusAgent) which select the configuration resource.</p>
+</td>
+</tr>
+</tbody>
 </table>
 <h3 id="monitoring.coreos.com/v1.CoreV1TopologySpreadConstraint">CoreV1TopologySpreadConstraint
 </h3>
@@ -9218,7 +9786,7 @@ some resources may allow a client to request the generation of an appropriate na
 automatically. Name is primarily intended for creation idempotence and configuration
 definition.
 Cannot be updated.
-More info: <a href="http://kubernetes.io/docs/user-guide/identifiers#names">http://kubernetes.io/docs/user-guide/identifiers#names</a></p>
+More info: <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/names/">https://kubernetes.io/docs/concepts/overview/working-with-objects/names/</a></p>
 </td>
 </tr>
 <tr>
@@ -9233,7 +9801,7 @@ map[string]string
 <p>Map of string keys and values that can be used to organize and categorize
 (scope and select) objects. May match selectors of replication controllers
 and services.
-More info: <a href="http://kubernetes.io/docs/user-guide/labels">http://kubernetes.io/docs/user-guide/labels</a></p>
+More info: <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/">https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/</a></p>
 </td>
 </tr>
 <tr>
@@ -9248,7 +9816,7 @@ map[string]string
 <p>Annotations is an unstructured key value map stored with a resource that may be
 set by external tools to store and retrieve arbitrary metadata. They are not
 queryable and should be preserved when modifying objects.
-More info: <a href="http://kubernetes.io/docs/user-guide/annotations">http://kubernetes.io/docs/user-guide/annotations</a></p>
+More info: <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/">https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/</a></p>
 </td>
 </tr>
 </tbody>
@@ -9488,7 +10056,7 @@ Kubernetes core/v1.PersistentVolumeClaimStatus
 <h3 id="monitoring.coreos.com/v1.EnableFeature">EnableFeature
 (<code>string</code> alias)</h3>
 <p>
-(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.CommonPrometheusFields">CommonPrometheusFields</a>)
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.CommonPrometheusFields">CommonPrometheusFields</a>, <a href="#monitoring.coreos.com/v1.ThanosRulerSpec">ThanosRulerSpec</a>)
 </p>
 <div>
 </div>
@@ -9776,8 +10344,51 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p><code>proxyURL</code> configures the HTTP Proxy URL (e.g.
-&ldquo;<a href="http://proxyserver:2195&quot;)">http://proxyserver:2195&rdquo;)</a> to go through when scraping the target.</p>
+<p><code>proxyURL</code> defines the HTTP proxy server to use.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>noProxy</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p><code>noProxy</code> is a comma-separated string that can contain IPs, CIDR notation, domain names
+that should be excluded from proxying. IP and domain names can
+contain port numbers.</p>
+<p>It requires Prometheus &gt;= v2.43.0, Alertmanager &gt;= v0.25.0 or Thanos &gt;= v0.32.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>proxyFromEnvironment</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to use the proxy configuration defined by environment variables (HTTP_PROXY, HTTPS_PROXY, and NO_PROXY).</p>
+<p>It requires Prometheus &gt;= v2.43.0, Alertmanager &gt;= v0.25.0 or Thanos &gt;= v0.32.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>proxyConnectHeader</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#secretkeyselector-v1-core">
+map[string][]Kubernetes core/v1.SecretKeySelector
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>ProxyConnectHeader optionally specifies headers to send to
+proxies during CONNECT requests.</p>
+<p>It requires Prometheus &gt;= v2.43.0, Alertmanager &gt;= v0.25.0 or Thanos &gt;= v0.32.0.</p>
 </td>
 </tr>
 <tr>
@@ -9851,6 +10462,102 @@ int64
 option for exemplars to be scraped in the first place.</p>
 <p>If not set, Prometheus uses its default value. A value of zero or less
 than zero disables the storage.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="monitoring.coreos.com/v1.GlobalJiraConfig">GlobalJiraConfig
+</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.AlertmanagerGlobalConfig">AlertmanagerGlobalConfig</a>)
+</p>
+<div>
+<p>GlobalJiraConfig configures global Jira parameters.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>apiURL</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The default Jira API URL.</p>
+<p>It requires Alertmanager &gt;= v0.28.0.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="monitoring.coreos.com/v1.GlobalRocketChatConfig">GlobalRocketChatConfig
+</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.AlertmanagerGlobalConfig">AlertmanagerGlobalConfig</a>)
+</p>
+<div>
+<p>GlobalRocketChatConfig configures global Rocket Chat parameters.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>apiURL</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The default Rocket Chat API URL.</p>
+<p>It requires Alertmanager &gt;= v0.28.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>token</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#secretkeyselector-v1-core">
+Kubernetes core/v1.SecretKeySelector
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The default Rocket Chat token.</p>
+<p>It requires Alertmanager &gt;= v0.28.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>tokenID</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#secretkeyselector-v1-core">
+Kubernetes core/v1.SecretKeySelector
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The default Rocket Chat Token ID.</p>
+<p>It requires Alertmanager &gt;= v0.28.0.</p>
 </td>
 </tr>
 </tbody>
@@ -9987,6 +10694,177 @@ SafeTLSConfig
 <td>
 <em>(Optional)</em>
 <p>The default TLS configuration for SMTP receivers</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="monitoring.coreos.com/v1.GlobalTelegramConfig">GlobalTelegramConfig
+</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.AlertmanagerGlobalConfig">AlertmanagerGlobalConfig</a>)
+</p>
+<div>
+<p>GlobalTelegramConfig configures global Telegram parameters.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>apiURL</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The default Telegram API URL.</p>
+<p>It requires Alertmanager &gt;= v0.24.0.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="monitoring.coreos.com/v1.GlobalVictorOpsConfig">GlobalVictorOpsConfig
+</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.AlertmanagerGlobalConfig">AlertmanagerGlobalConfig</a>)
+</p>
+<div>
+<p>GlobalVictorOpsConfig configures global VictorOps parameters.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>apiURL</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The default VictorOps API URL.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>apiKey</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#secretkeyselector-v1-core">
+Kubernetes core/v1.SecretKeySelector
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The default VictorOps API Key.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="monitoring.coreos.com/v1.GlobalWeChatConfig">GlobalWeChatConfig
+</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.AlertmanagerGlobalConfig">AlertmanagerGlobalConfig</a>)
+</p>
+<div>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>apiURL</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The default WeChat API URL.
+The default value is &ldquo;<a href="https://qyapi.weixin.qq.com/cgi-bin/&quot;">https://qyapi.weixin.qq.com/cgi-bin/&rdquo;</a></p>
+</td>
+</tr>
+<tr>
+<td>
+<code>apiSecret</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#secretkeyselector-v1-core">
+Kubernetes core/v1.SecretKeySelector
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The default WeChat API Secret.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>apiCorpID</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The default WeChat API Corporate ID.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="monitoring.coreos.com/v1.GlobalWebexConfig">GlobalWebexConfig
+</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.AlertmanagerGlobalConfig">AlertmanagerGlobalConfig</a>)
+</p>
+<div>
+<p>GlobalWebexConfig configures global Webex parameters.
+See <a href="https://prometheus.io/docs/alerting/latest/configuration/#configuration-file">https://prometheus.io/docs/alerting/latest/configuration/#configuration-file</a></p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>apiURL</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The default Webex API URL.</p>
+<p>It requires Alertmanager &gt;= v0.25.0.</p>
 </td>
 </tr>
 </tbody>
@@ -10337,17 +11215,55 @@ int32
 </tr>
 </tbody>
 </table>
+<h3 id="monitoring.coreos.com/v1.NameEscapingSchemeOptions">NameEscapingSchemeOptions
+(<code>string</code> alias)</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.CommonPrometheusFields">CommonPrometheusFields</a>, <a href="#monitoring.coreos.com/v1alpha1.ScrapeConfigSpec">ScrapeConfigSpec</a>)
+</p>
+<div>
+<p>Specifies the character escaping scheme that will be applied when scraping
+for metric and label names that do not conform to the legacy Prometheus
+character set.</p>
+<p>Supported values are:</p>
+<ul>
+<li><code>AllowUTF8</code>, full UTF-8 support, no escaping needed.</li>
+<li><code>Underscores</code>, legacy-invalid characters are escaped to underscores.</li>
+<li><code>Dots</code>, dot characters are escaped to <code>_dot_</code>, underscores to <code>__</code>, and
+all other legacy-invalid characters to underscores.</li>
+<li><code>Values</code>, the string is prefixed by <code>U__</code> and all invalid characters are
+escaped to their unicode value, surrounded by underscores.</li>
+</ul>
+</div>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr><td><p>&#34;AllowUTF8&#34;</p></td>
+<td></td>
+</tr><tr><td><p>&#34;Dots&#34;</p></td>
+<td></td>
+</tr><tr><td><p>&#34;Underscores&#34;</p></td>
+<td></td>
+</tr><tr><td><p>&#34;Values&#34;</p></td>
+<td></td>
+</tr></tbody>
+</table>
 <h3 id="monitoring.coreos.com/v1.NameValidationSchemeOptions">NameValidationSchemeOptions
 (<code>string</code> alias)</h3>
 <p>
-(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.CommonPrometheusFields">CommonPrometheusFields</a>)
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.CommonPrometheusFields">CommonPrometheusFields</a>, <a href="#monitoring.coreos.com/v1alpha1.ScrapeConfigSpec">ScrapeConfigSpec</a>)
 </p>
 <div>
-<p>Specifies the validation scheme for metric and label names.
-Supported values are:
-* <code>UTF8NameValidationScheme</code> for UTF-8 support.
-* <code>LegacyNameValidationScheme</code> for letters, numbers, colons, and underscores.</p>
-<p>Note that <code>LegacyNameValidationScheme</code> cannot be used along with the OpenTelemetry <code>NoUTF8EscapingWithSuffixes</code> translation strategy (if enabled).</p>
+<p>Specifies the validation scheme for metric and label names.</p>
+<p>Supported values are:
+- <code>UTF8NameValidationScheme</code> for UTF-8 support.
+- <code>LegacyNameValidationScheme</code> for letters, numbers, colons, and underscores.</p>
+<p>Note that <code>LegacyNameValidationScheme</code> cannot be used along with the
+OpenTelemetry <code>NoUTF8EscapingWithSuffixes</code> translation strategy (if
+enabled).</p>
 </div>
 <table>
 <thead>
@@ -10434,6 +11350,7 @@ bool
 <em>(Optional)</em>
 <p>Whether to scrape a classic histogram that is also exposed as a native histogram.
 It requires Prometheus &gt;= v2.45.0.</p>
+<p>Notice: <code>scrapeClassicHistograms</code> corresponds to the <code>always_scrape_classic_histograms</code> field in the Prometheus configuration.</p>
 </td>
 </tr>
 <tr>
@@ -10686,6 +11603,34 @@ string
 <tbody>
 <tr>
 <td>
+<code>promoteAllResourceAttributes</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Promote all resource attributes to metric labels except the ones defined in <code>ignoreResourceAttributes</code>.</p>
+<p>Cannot be true when <code>promoteResourceAttributes</code> is defined.
+It requires Prometheus &gt;= v3.5.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>ignoreResourceAttributes</code><br/>
+<em>
+[]string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>List of OpenTelemetry resource attributes to ignore when <code>promoteAllResourceAttributes</code> is true.</p>
+<p>It requires <code>promoteAllResourceAttributes</code> to be true.
+It requires Prometheus &gt;= v3.5.0.</p>
+</td>
+</tr>
+<tr>
+<td>
 <code>promoteResourceAttributes</code><br/>
 <em>
 []string
@@ -10693,7 +11638,8 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p>List of OpenTelemetry Attributes that should be promoted to metric labels, defaults to none.</p>
+<p>List of OpenTelemetry Attributes that should be promoted to metric labels, defaults to none.
+Cannot be defined when <code>promoteAllResourceAttributes</code> is true.</p>
 </td>
 </tr>
 <tr>
@@ -11189,8 +12135,51 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p><code>proxyURL</code> configures the HTTP Proxy URL (e.g.
-&ldquo;<a href="http://proxyserver:2195&quot;)">http://proxyserver:2195&rdquo;)</a> to go through when scraping the target.</p>
+<p><code>proxyURL</code> defines the HTTP proxy server to use.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>noProxy</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p><code>noProxy</code> is a comma-separated string that can contain IPs, CIDR notation, domain names
+that should be excluded from proxying. IP and domain names can
+contain port numbers.</p>
+<p>It requires Prometheus &gt;= v2.43.0, Alertmanager &gt;= v0.25.0 or Thanos &gt;= v0.32.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>proxyFromEnvironment</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to use the proxy configuration defined by environment variables (HTTP_PROXY, HTTPS_PROXY, and NO_PROXY).</p>
+<p>It requires Prometheus &gt;= v2.43.0, Alertmanager &gt;= v0.25.0 or Thanos &gt;= v0.32.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>proxyConnectHeader</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#secretkeyselector-v1-core">
+map[string][]Kubernetes core/v1.SecretKeySelector
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>ProxyConnectHeader optionally specifies headers to send to
+proxies during CONNECT requests.</p>
+<p>It requires Prometheus &gt;= v2.43.0, Alertmanager &gt;= v0.25.0 or Thanos &gt;= v0.32.0.</p>
 </td>
 </tr>
 <tr>
@@ -11448,6 +12437,7 @@ bool
 <em>(Optional)</em>
 <p>Whether to scrape a classic histogram that is also exposed as a native histogram.
 It requires Prometheus &gt;= v2.45.0.</p>
+<p>Notice: <code>scrapeClassicHistograms</code> corresponds to the <code>always_scrape_classic_histograms</code> field in the Prometheus configuration.</p>
 </td>
 </tr>
 <tr>
@@ -11549,6 +12539,46 @@ ByteSize
 <p>When defined, bodySizeLimit specifies a job level limit on the size
 of uncompressed response body that will be accepted by Prometheus.</p>
 <p>It requires Prometheus &gt;= v2.28.0.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="monitoring.coreos.com/v1.ProbeParam">ProbeParam
+</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.ProbeSpec">ProbeSpec</a>)
+</p>
+<div>
+<p>ProbeParam defines specification of extra parameters for a Probe.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>name</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<p>The parameter name</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>values</code><br/>
+<em>
+[]string
+</em>
+</td>
+<td>
+<p>The parameter values</p>
 </td>
 </tr>
 </tbody>
@@ -11836,6 +12866,7 @@ bool
 <em>(Optional)</em>
 <p>Whether to scrape a classic histogram that is also exposed as a native histogram.
 It requires Prometheus &gt;= v2.45.0.</p>
+<p>Notice: <code>scrapeClassicHistograms</code> corresponds to the <code>always_scrape_classic_histograms</code> field in the Prometheus configuration.</p>
 </td>
 </tr>
 <tr>
@@ -11905,6 +12936,22 @@ string
 <td>
 <em>(Optional)</em>
 <p>The scrape class to apply.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>params</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.ProbeParam">
+[]ProbeParam
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The list of HTTP query parameters for the scrape.
+Please note that the <code>.spec.module</code> field takes precedence over the <code>module</code> parameter from this list when both are defined.
+The module name must be added using Module under ProbeSpec.</p>
 </td>
 </tr>
 </tbody>
@@ -12165,7 +13212,52 @@ string
 </em>
 </td>
 <td>
-<p>Optional ProxyURL.</p>
+<em>(Optional)</em>
+<p><code>proxyURL</code> defines the HTTP proxy server to use.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>noProxy</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p><code>noProxy</code> is a comma-separated string that can contain IPs, CIDR notation, domain names
+that should be excluded from proxying. IP and domain names can
+contain port numbers.</p>
+<p>It requires Prometheus &gt;= v2.43.0, Alertmanager &gt;= v0.25.0 or Thanos &gt;= v0.32.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>proxyFromEnvironment</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to use the proxy configuration defined by environment variables (HTTP_PROXY, HTTPS_PROXY, and NO_PROXY).</p>
+<p>It requires Prometheus &gt;= v2.43.0, Alertmanager &gt;= v0.25.0 or Thanos &gt;= v0.32.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>proxyConnectHeader</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#secretkeyselector-v1-core">
+map[string][]Kubernetes core/v1.SecretKeySelector
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>ProxyConnectHeader optionally specifies headers to send to
+proxies during CONNECT requests.</p>
+<p>It requires Prometheus &gt;= v2.43.0, Alertmanager &gt;= v0.25.0 or Thanos &gt;= v0.32.0.</p>
 </td>
 </tr>
 </tbody>
@@ -13415,22 +14507,66 @@ NameValidationSchemeOptions
 <td>
 <em>(Optional)</em>
 <p>Specifies the validation scheme for metric and label names.</p>
+<p>It requires Prometheus &gt;= v2.55.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameEscapingScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameEscapingSchemeOptions">
+NameEscapingSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Specifies the character escaping scheme that will be requested when scraping
+for metric and label names that do not conform to the legacy Prometheus
+character set.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>convertClassicHistogramsToNHCB</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to convert all scraped classic histograms into a native
+histogram with custom buckets.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>scrapeClassicHistograms</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to scrape a classic histogram that is also exposed as a native histogram.</p>
+<p>Notice: <code>scrapeClassicHistograms</code> corresponds to the <code>always_scrape_classic_histograms</code> field in the Prometheus configuration.</p>
+<p>It requires Prometheus &gt;= v3.5.0.</p>
 </td>
 </tr>
 <tr>
 <td>
 <code>minReadySeconds</code><br/>
 <em>
-uint32
+int32
 </em>
 </td>
 <td>
 <em>(Optional)</em>
 <p>Minimum number of seconds for which a newly created Pod should be ready
-without any of its container crashing for it to be considered available.
-Defaults to 0 (pod will be considered available as soon as it is ready)</p>
-<p>This is an alpha field from kubernetes 1.22 until 1.24 which requires
-enabling the StatefulSetMinReadySeconds feature gate.</p>
+without any of its container crashing for it to be considered available.</p>
+<p>If unset, pods will be considered available as soon as they are ready.</p>
 </td>
 </tr>
 <tr>
@@ -13509,7 +14645,7 @@ bool
 <td>
 <p>Use the host&rsquo;s network namespace if true.</p>
 <p>Make sure to understand the security implications if you want to enable
-it (<a href="https://kubernetes.io/docs/concepts/configuration/overview/">https://kubernetes.io/docs/concepts/configuration/overview/</a>).</p>
+it (<a href="https://kubernetes.io/docs/concepts/configuration/overview/">https://kubernetes.io/docs/concepts/configuration/overview/</a> ).</p>
 <p>When hostNetwork is enabled, this will set the DNS policy to
 <code>ClusterFirstWithHostNet</code> automatically (unless <code>.spec.DNSPolicy</code> is set
 to a different value).</p>
@@ -13790,6 +14926,21 @@ int64
 Value must be non-negative integer. The value zero indicates stop immediately via
 the kill signal (no opportunity to shut down) which may lead to data corruption.</p>
 <p>Defaults to 600 seconds.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>hostUsers</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HostUsers supports the user space in Kubernetes.</p>
+<p>More info: <a href="https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/">https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/</a></p>
+<p>The feature requires at least Kubernetes 1.28 with the <code>UserNamespacesSupport</code> feature gate enabled.
+Starting Kubernetes 1.33, the feature is enabled by default.</p>
 </td>
 </tr>
 <tr>
@@ -14464,7 +15615,7 @@ A zero value means that Prometheus doesn&rsquo;t accept any incoming connection.
 <h3 id="monitoring.coreos.com/v1.ProxyConfig">ProxyConfig
 </h3>
 <p>
-(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.AlertmanagerEndpoints">AlertmanagerEndpoints</a>, <a href="#monitoring.coreos.com/v1.HTTPConfig">HTTPConfig</a>, <a href="#monitoring.coreos.com/v1.OAuth2">OAuth2</a>, <a href="#monitoring.coreos.com/v1.RemoteReadSpec">RemoteReadSpec</a>, <a href="#monitoring.coreos.com/v1.RemoteWriteSpec">RemoteWriteSpec</a>, <a href="#monitoring.coreos.com/v1alpha1.AzureSDConfig">AzureSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.ConsulSDConfig">ConsulSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.DigitalOceanSDConfig">DigitalOceanSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.DockerSDConfig">DockerSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.DockerSwarmSDConfig">DockerSwarmSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.EC2SDConfig">EC2SDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.EurekaSDConfig">EurekaSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.HTTPConfig">HTTPConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.HTTPSDConfig">HTTPSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.HetznerSDConfig">HetznerSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.IonosSDConfig">IonosSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.KubernetesSDConfig">KubernetesSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.KumaSDConfig">KumaSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.LightSailSDConfig">LightSailSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.LinodeSDConfig">LinodeSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.NomadSDConfig">NomadSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.PuppetDBSDConfig">PuppetDBSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.ScalewaySDConfig">ScalewaySDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.ScrapeConfigSpec">ScrapeConfigSpec</a>, <a href="#monitoring.coreos.com/v1beta1.HTTPConfig">HTTPConfig</a>)
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.APIServerConfig">APIServerConfig</a>, <a href="#monitoring.coreos.com/v1.AlertmanagerEndpoints">AlertmanagerEndpoints</a>, <a href="#monitoring.coreos.com/v1.Endpoint">Endpoint</a>, <a href="#monitoring.coreos.com/v1.HTTPConfig">HTTPConfig</a>, <a href="#monitoring.coreos.com/v1.OAuth2">OAuth2</a>, <a href="#monitoring.coreos.com/v1.PodMetricsEndpoint">PodMetricsEndpoint</a>, <a href="#monitoring.coreos.com/v1.ProberSpec">ProberSpec</a>, <a href="#monitoring.coreos.com/v1.RemoteReadSpec">RemoteReadSpec</a>, <a href="#monitoring.coreos.com/v1.RemoteWriteSpec">RemoteWriteSpec</a>, <a href="#monitoring.coreos.com/v1alpha1.AzureSDConfig">AzureSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.ConsulSDConfig">ConsulSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.DigitalOceanSDConfig">DigitalOceanSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.DockerSDConfig">DockerSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.DockerSwarmSDConfig">DockerSwarmSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.EC2SDConfig">EC2SDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.EurekaSDConfig">EurekaSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.HTTPConfig">HTTPConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.HTTPSDConfig">HTTPSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.HetznerSDConfig">HetznerSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.IonosSDConfig">IonosSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.KubernetesSDConfig">KubernetesSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.KumaSDConfig">KumaSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.LightSailSDConfig">LightSailSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.LinodeSDConfig">LinodeSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.NomadSDConfig">NomadSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.PuppetDBSDConfig">PuppetDBSDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.ScalewaySDConfig">ScalewaySDConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.ScrapeConfigSpec">ScrapeConfigSpec</a>, <a href="#monitoring.coreos.com/v1beta1.HTTPConfig">HTTPConfig</a>)
 </p>
 <div>
 </div>
@@ -16565,6 +17716,7 @@ bool
 <em>(Optional)</em>
 <p>Whether to scrape a classic histogram that is also exposed as a native histogram.
 It requires Prometheus &gt;= v2.45.0.</p>
+<p>Notice: <code>scrapeClassicHistograms</code> corresponds to the <code>always_scrape_classic_histograms</code> field in the Prometheus configuration.</p>
 </td>
 </tr>
 <tr>
@@ -17715,6 +18867,79 @@ Duration
 </tr>
 <tr>
 <td>
+<code>resendDelay</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.Duration">
+Duration
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Minimum amount of time to wait before resending an alert to Alertmanager.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>ruleOutageTolerance</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.Duration">
+Duration
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Max time to tolerate prometheus outage for restoring &ldquo;for&rdquo; state of alert.
+It requires Thanos &gt;= v0.30.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>ruleQueryOffset</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.Duration">
+Duration
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The default rule group&rsquo;s query offset duration to use.
+It requires Thanos &gt;= v0.38.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>ruleConcurrentEval</code><br/>
+<em>
+int32
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>How many rules can be evaluated concurrently.
+It requires Thanos &gt;= v0.37.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>ruleGracePeriod</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.Duration">
+Duration
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Minimum duration between alert and restored &ldquo;for&rdquo; state.
+This is maintained only for alerts with configured &ldquo;for&rdquo; time greater than grace period.
+It requires Thanos &gt;= v0.30.0.</p>
+</td>
+</tr>
+<tr>
+<td>
 <code>retention</code><br/>
 <em>
 <a href="#monitoring.coreos.com/v1.Duration">
@@ -17892,15 +19117,14 @@ Maps to the &lsquo;&ndash;alert.query-url&rsquo; CLI arg.</p>
 <td>
 <code>minReadySeconds</code><br/>
 <em>
-uint32
+int32
 </em>
 </td>
 <td>
 <em>(Optional)</em>
 <p>Minimum number of seconds for which a newly created pod should be ready
-without any of its container crashing for it to be considered available.
-Defaults to 0 (pod will be considered available as soon as it is ready)
-This is an alpha field from kubernetes 1.22 until 1.24 which requires enabling the StatefulSetMinReadySeconds feature gate.</p>
+without any of its container crashing for it to be considered available.</p>
+<p>If unset, pods will be considered available as soon as they are ready.</p>
 </td>
 </tr>
 <tr>
@@ -18016,6 +19240,40 @@ int64
 Value must be non-negative integer. The value zero indicates stop immediately via
 the kill signal (no opportunity to shut down) which may lead to data corruption.</p>
 <p>Defaults to 120 seconds.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>enableFeatures</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.EnableFeature">
+[]EnableFeature
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Enable access to Thanos Ruler feature flags. By default, no features are enabled.</p>
+<p>Enabling features which are disabled by default is entirely outside the
+scope of what the maintainers will support and by doing so, you accept
+that this behaviour may break at any time without notice.</p>
+<p>For more information see <a href="https://thanos.io/tip/components/rule.md/">https://thanos.io/tip/components/rule.md/</a></p>
+<p>It requires Thanos &gt;= 0.39.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>hostUsers</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HostUsers supports the user space in Kubernetes.</p>
+<p>More info: <a href="https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/">https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/</a></p>
+<p>The feature requires at least Kubernetes 1.28 with the <code>UserNamespacesSupport</code> feature gate enabled.
+Starting Kubernetes 1.33, the feature is enabled by default.</p>
 </td>
 </tr>
 </tbody>
@@ -18742,6 +20000,14 @@ Supported values are:
 <td></td>
 </tr></tbody>
 </table>
+<h3 id="monitoring.coreos.com/v1.URL">URL
+(<code>string</code> alias)</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.GlobalJiraConfig">GlobalJiraConfig</a>, <a href="#monitoring.coreos.com/v1.GlobalRocketChatConfig">GlobalRocketChatConfig</a>, <a href="#monitoring.coreos.com/v1.GlobalTelegramConfig">GlobalTelegramConfig</a>, <a href="#monitoring.coreos.com/v1.GlobalVictorOpsConfig">GlobalVictorOpsConfig</a>, <a href="#monitoring.coreos.com/v1.GlobalWeChatConfig">GlobalWeChatConfig</a>, <a href="#monitoring.coreos.com/v1.GlobalWebexConfig">GlobalWebexConfig</a>)
+</p>
+<div>
+<p>URL represents a valid URL</p>
+</div>
 <h3 id="monitoring.coreos.com/v1.WebConfigFileFields">WebConfigFileFields
 </h3>
 <p>
@@ -19113,6 +20379,82 @@ order.</p>
 </p>
 <div>
 </div>
+<h3 id="monitoring.coreos.com/v1.WorkloadBinding">WorkloadBinding
+</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1.ConfigResourceStatus">ConfigResourceStatus</a>)
+</p>
+<div>
+<p>WorkloadBinding is a link between a configuration resource and a workload resource.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>group</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<p>The group of the referenced resource.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>resource</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<p>The type of resource being referenced (e.g. Prometheus or PrometheusAgent).</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>name</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<p>The name of the referenced object.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>namespace</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<p>The namespace of the referenced object.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>conditions</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.ConfigResourceCondition">
+[]ConfigResourceCondition
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The current state of the configuration resource when bound to the referenced Prometheus object.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <hr/>
 <h2 id="monitoring.coreos.com/v1alpha1">monitoring.coreos.com/v1alpha1</h2>
 Resource Types:
@@ -20475,22 +21817,66 @@ NameValidationSchemeOptions
 <td>
 <em>(Optional)</em>
 <p>Specifies the validation scheme for metric and label names.</p>
+<p>It requires Prometheus &gt;= v2.55.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameEscapingScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameEscapingSchemeOptions">
+NameEscapingSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Specifies the character escaping scheme that will be requested when scraping
+for metric and label names that do not conform to the legacy Prometheus
+character set.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>convertClassicHistogramsToNHCB</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to convert all scraped classic histograms into a native
+histogram with custom buckets.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>scrapeClassicHistograms</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to scrape a classic histogram that is also exposed as a native histogram.</p>
+<p>Notice: <code>scrapeClassicHistograms</code> corresponds to the <code>always_scrape_classic_histograms</code> field in the Prometheus configuration.</p>
+<p>It requires Prometheus &gt;= v3.5.0.</p>
 </td>
 </tr>
 <tr>
 <td>
 <code>minReadySeconds</code><br/>
 <em>
-uint32
+int32
 </em>
 </td>
 <td>
 <em>(Optional)</em>
 <p>Minimum number of seconds for which a newly created Pod should be ready
-without any of its container crashing for it to be considered available.
-Defaults to 0 (pod will be considered available as soon as it is ready)</p>
-<p>This is an alpha field from kubernetes 1.22 until 1.24 which requires
-enabling the StatefulSetMinReadySeconds feature gate.</p>
+without any of its container crashing for it to be considered available.</p>
+<p>If unset, pods will be considered available as soon as they are ready.</p>
 </td>
 </tr>
 <tr>
@@ -20569,7 +21955,7 @@ bool
 <td>
 <p>Use the host&rsquo;s network namespace if true.</p>
 <p>Make sure to understand the security implications if you want to enable
-it (<a href="https://kubernetes.io/docs/concepts/configuration/overview/">https://kubernetes.io/docs/concepts/configuration/overview/</a>).</p>
+it (<a href="https://kubernetes.io/docs/concepts/configuration/overview/">https://kubernetes.io/docs/concepts/configuration/overview/</a> ).</p>
 <p>When hostNetwork is enabled, this will set the DNS policy to
 <code>ClusterFirstWithHostNet</code> automatically (unless <code>.spec.DNSPolicy</code> is set
 to a different value).</p>
@@ -20850,6 +22236,21 @@ int64
 Value must be non-negative integer. The value zero indicates stop immediately via
 the kill signal (no opportunity to shut down) which may lead to data corruption.</p>
 <p>Defaults to 600 seconds.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>hostUsers</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HostUsers supports the user space in Kubernetes.</p>
+<p>More info: <a href="https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/">https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/</a></p>
+<p>The feature requires at least Kubernetes 1.28 with the <code>UserNamespacesSupport</code> feature gate enabled.
+Starting Kubernetes 1.33, the feature is enabled by default.</p>
 </td>
 </tr>
 </table>
@@ -21577,6 +22978,7 @@ bool
 <em>(Optional)</em>
 <p>Whether to scrape a classic histogram that is also exposed as a native histogram.
 It requires Prometheus &gt;= v2.45.0.</p>
+<p>Notice: <code>scrapeClassicHistograms</code> corresponds to the <code>always_scrape_classic_histograms</code> field in the Prometheus configuration.</p>
 </td>
 </tr>
 <tr>
@@ -21704,6 +23106,36 @@ map[string][]Kubernetes core/v1.SecretKeySelector
 <p>ProxyConnectHeader optionally specifies headers to send to
 proxies during CONNECT requests.</p>
 <p>It requires Prometheus &gt;= v2.43.0, Alertmanager &gt;= v0.25.0 or Thanos &gt;= v0.32.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameValidationScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameValidationSchemeOptions">
+NameValidationSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Specifies the validation scheme for metric and label names.</p>
+<p>It requires Prometheus &gt;= v3.0.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameEscapingScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameEscapingSchemeOptions">
+NameEscapingSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Metric name escaping mode to request through content negotiation.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
 </td>
 </tr>
 <tr>
@@ -23016,7 +24448,7 @@ SafeTLSConfig
 <td>
 <code>port</code><br/>
 <em>
-int
+int32
 </em>
 </td>
 <td>
@@ -24167,7 +25599,7 @@ string
 <h3 id="monitoring.coreos.com/v1alpha1.HTTPConfig">HTTPConfig
 </h3>
 <p>
-(<em>Appears on:</em><a href="#monitoring.coreos.com/v1alpha1.DiscordConfig">DiscordConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.MSTeamsConfig">MSTeamsConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.MSTeamsV2Config">MSTeamsV2Config</a>, <a href="#monitoring.coreos.com/v1alpha1.OpsGenieConfig">OpsGenieConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.PagerDutyConfig">PagerDutyConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.PushoverConfig">PushoverConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.SNSConfig">SNSConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.SlackConfig">SlackConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.TelegramConfig">TelegramConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.VictorOpsConfig">VictorOpsConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.WeChatConfig">WeChatConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.WebexConfig">WebexConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.WebhookConfig">WebhookConfig</a>)
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1alpha1.DiscordConfig">DiscordConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.MSTeamsConfig">MSTeamsConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.MSTeamsV2Config">MSTeamsV2Config</a>, <a href="#monitoring.coreos.com/v1alpha1.OpsGenieConfig">OpsGenieConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.PagerDutyConfig">PagerDutyConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.PushoverConfig">PushoverConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.RocketChatConfig">RocketChatConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.SNSConfig">SNSConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.SlackConfig">SlackConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.TelegramConfig">TelegramConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.VictorOpsConfig">VictorOpsConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.WeChatConfig">WeChatConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.WebexConfig">WebexConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.WebhookConfig">WebhookConfig</a>)
 </p>
 <div>
 <p>HTTPConfig defines a client HTTP configuration.
@@ -24716,6 +26148,19 @@ Duration
 <td>
 <em>(Optional)</em>
 <p>The time after which the servers are refreshed.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>labelSelector</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Label selector used to filter the servers when fetching them from the API.
+It requires Prometheus &gt;= v3.5.0.</p>
 </td>
 </tr>
 </tbody>
@@ -28839,22 +30284,66 @@ NameValidationSchemeOptions
 <td>
 <em>(Optional)</em>
 <p>Specifies the validation scheme for metric and label names.</p>
+<p>It requires Prometheus &gt;= v2.55.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameEscapingScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameEscapingSchemeOptions">
+NameEscapingSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Specifies the character escaping scheme that will be requested when scraping
+for metric and label names that do not conform to the legacy Prometheus
+character set.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>convertClassicHistogramsToNHCB</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to convert all scraped classic histograms into a native
+histogram with custom buckets.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>scrapeClassicHistograms</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to scrape a classic histogram that is also exposed as a native histogram.</p>
+<p>Notice: <code>scrapeClassicHistograms</code> corresponds to the <code>always_scrape_classic_histograms</code> field in the Prometheus configuration.</p>
+<p>It requires Prometheus &gt;= v3.5.0.</p>
 </td>
 </tr>
 <tr>
 <td>
 <code>minReadySeconds</code><br/>
 <em>
-uint32
+int32
 </em>
 </td>
 <td>
 <em>(Optional)</em>
 <p>Minimum number of seconds for which a newly created Pod should be ready
-without any of its container crashing for it to be considered available.
-Defaults to 0 (pod will be considered available as soon as it is ready)</p>
-<p>This is an alpha field from kubernetes 1.22 until 1.24 which requires
-enabling the StatefulSetMinReadySeconds feature gate.</p>
+without any of its container crashing for it to be considered available.</p>
+<p>If unset, pods will be considered available as soon as they are ready.</p>
 </td>
 </tr>
 <tr>
@@ -28933,7 +30422,7 @@ bool
 <td>
 <p>Use the host&rsquo;s network namespace if true.</p>
 <p>Make sure to understand the security implications if you want to enable
-it (<a href="https://kubernetes.io/docs/concepts/configuration/overview/">https://kubernetes.io/docs/concepts/configuration/overview/</a>).</p>
+it (<a href="https://kubernetes.io/docs/concepts/configuration/overview/">https://kubernetes.io/docs/concepts/configuration/overview/</a> ).</p>
 <p>When hostNetwork is enabled, this will set the DNS policy to
 <code>ClusterFirstWithHostNet</code> automatically (unless <code>.spec.DNSPolicy</code> is set
 to a different value).</p>
@@ -29214,6 +30703,21 @@ int64
 Value must be non-negative integer. The value zero indicates stop immediately via
 the kill signal (no opportunity to shut down) which may lead to data corruption.</p>
 <p>Defaults to 600 seconds.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>hostUsers</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HostUsers supports the user space in Kubernetes.</p>
+<p>More info: <a href="https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/">https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/</a></p>
+<p>The feature requires at least Kubernetes 1.28 with the <code>UserNamespacesSupport</code> feature gate enabled.
+Starting Kubernetes 1.33, the feature is enabled by default.</p>
 </td>
 </tr>
 </tbody>
@@ -29891,6 +31395,382 @@ It requires Alertmanager &gt;= 0.26.0.</p>
 <td>
 <p>List of MSTeamsV2 configurations.
 It requires Alertmanager &gt;= 0.28.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>rocketchatConfigs</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1alpha1.RocketChatConfig">
+[]RocketChatConfig
+</a>
+</em>
+</td>
+<td>
+<p>List of RocketChat configurations.
+It requires Alertmanager &gt;= 0.28.0.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="monitoring.coreos.com/v1alpha1.RocketChatActionConfig">RocketChatActionConfig
+</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1alpha1.RocketChatConfig">RocketChatConfig</a>)
+</p>
+<div>
+<p>RocketChatActionConfig defines actions for RocketChat messages.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>text</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The button text.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>url</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1alpha1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The URL the button links to.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>msg</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The message to send when the button is clicked.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="monitoring.coreos.com/v1alpha1.RocketChatConfig">RocketChatConfig
+</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1alpha1.Receiver">Receiver</a>)
+</p>
+<div>
+<p>RocketChatConfig configures notifications via RocketChat.
+It requires Alertmanager &gt;= 0.28.0.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>sendResolved</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to notify about resolved alerts.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>apiURL</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1alpha1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The API URL for RocketChat.
+Defaults to <a href="https://open.rocket.chat/">https://open.rocket.chat/</a> if not specified.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>channel</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The channel to send alerts to.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>token</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#secretkeyselector-v1-core">
+Kubernetes core/v1.SecretKeySelector
+</a>
+</em>
+</td>
+<td>
+<p>The sender token.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>tokenID</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#secretkeyselector-v1-core">
+Kubernetes core/v1.SecretKeySelector
+</a>
+</em>
+</td>
+<td>
+<p>The sender token ID.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>color</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The message color.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>emoji</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>If provided, the avatar will be displayed as an emoji.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>iconURL</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1alpha1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Icon URL for the message.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>text</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The message text to send, it is optional because of attachments.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>title</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The message title.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>titleLink</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The title link for the message.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>fields</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1alpha1.RocketChatFieldConfig">
+[]RocketChatFieldConfig
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Additional fields for the message.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>shortFields</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to use short fields.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>imageURL</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1alpha1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Image URL for the message.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>thumbURL</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1alpha1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Thumbnail URL for the message.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>linkNames</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to enable link names.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>actions</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1alpha1.RocketChatActionConfig">
+[]RocketChatActionConfig
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Actions to include in the message.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>httpConfig</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1alpha1.HTTPConfig">
+HTTPConfig
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HTTP client configuration.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="monitoring.coreos.com/v1alpha1.RocketChatFieldConfig">RocketChatFieldConfig
+</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1alpha1.RocketChatConfig">RocketChatConfig</a>)
+</p>
+<div>
+<p>RocketChatFieldConfig defines additional fields for RocketChat messages.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>title</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The title of this field.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>value</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The value of this field, displayed underneath the title value.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>short</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether this field should be a short field.</p>
 </td>
 </tr>
 </tbody>
@@ -31132,6 +33012,7 @@ bool
 <em>(Optional)</em>
 <p>Whether to scrape a classic histogram that is also exposed as a native histogram.
 It requires Prometheus &gt;= v2.45.0.</p>
+<p>Notice: <code>scrapeClassicHistograms</code> corresponds to the <code>always_scrape_classic_histograms</code> field in the Prometheus configuration.</p>
 </td>
 </tr>
 <tr>
@@ -31259,6 +33140,36 @@ map[string][]Kubernetes core/v1.SecretKeySelector
 <p>ProxyConnectHeader optionally specifies headers to send to
 proxies during CONNECT requests.</p>
 <p>It requires Prometheus &gt;= v2.43.0, Alertmanager &gt;= v0.25.0 or Thanos &gt;= v0.32.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameValidationScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameValidationSchemeOptions">
+NameValidationSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Specifies the validation scheme for metric and label names.</p>
+<p>It requires Prometheus &gt;= v3.0.0.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nameEscapingScheme</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1.NameEscapingSchemeOptions">
+NameEscapingSchemeOptions
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Metric name escaping mode to request through content negotiation.</p>
+<p>It requires Prometheus &gt;= v3.4.0.</p>
 </td>
 </tr>
 <tr>
@@ -32128,7 +34039,7 @@ Time
 <h3 id="monitoring.coreos.com/v1alpha1.URL">URL
 (<code>string</code> alias)</h3>
 <p>
-(<em>Appears on:</em><a href="#monitoring.coreos.com/v1alpha1.DiscordConfig">DiscordConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.WebexConfig">WebexConfig</a>)
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1alpha1.DiscordConfig">DiscordConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.RocketChatActionConfig">RocketChatActionConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.RocketChatConfig">RocketChatConfig</a>, <a href="#monitoring.coreos.com/v1alpha1.WebexConfig">WebexConfig</a>)
 </p>
 <div>
 <p>URL represents a valid URL</p>
@@ -33233,7 +35144,7 @@ SafeTLSConfig
 <h3 id="monitoring.coreos.com/v1beta1.HTTPConfig">HTTPConfig
 </h3>
 <p>
-(<em>Appears on:</em><a href="#monitoring.coreos.com/v1beta1.DiscordConfig">DiscordConfig</a>, <a href="#monitoring.coreos.com/v1beta1.MSTeamsConfig">MSTeamsConfig</a>, <a href="#monitoring.coreos.com/v1beta1.MSTeamsV2Config">MSTeamsV2Config</a>, <a href="#monitoring.coreos.com/v1beta1.OpsGenieConfig">OpsGenieConfig</a>, <a href="#monitoring.coreos.com/v1beta1.PagerDutyConfig">PagerDutyConfig</a>, <a href="#monitoring.coreos.com/v1beta1.PushoverConfig">PushoverConfig</a>, <a href="#monitoring.coreos.com/v1beta1.SNSConfig">SNSConfig</a>, <a href="#monitoring.coreos.com/v1beta1.SlackConfig">SlackConfig</a>, <a href="#monitoring.coreos.com/v1beta1.TelegramConfig">TelegramConfig</a>, <a href="#monitoring.coreos.com/v1beta1.VictorOpsConfig">VictorOpsConfig</a>, <a href="#monitoring.coreos.com/v1beta1.WeChatConfig">WeChatConfig</a>, <a href="#monitoring.coreos.com/v1beta1.WebexConfig">WebexConfig</a>, <a href="#monitoring.coreos.com/v1beta1.WebhookConfig">WebhookConfig</a>)
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1beta1.DiscordConfig">DiscordConfig</a>, <a href="#monitoring.coreos.com/v1beta1.MSTeamsConfig">MSTeamsConfig</a>, <a href="#monitoring.coreos.com/v1beta1.MSTeamsV2Config">MSTeamsV2Config</a>, <a href="#monitoring.coreos.com/v1beta1.OpsGenieConfig">OpsGenieConfig</a>, <a href="#monitoring.coreos.com/v1beta1.PagerDutyConfig">PagerDutyConfig</a>, <a href="#monitoring.coreos.com/v1beta1.PushoverConfig">PushoverConfig</a>, <a href="#monitoring.coreos.com/v1beta1.RocketChatConfig">RocketChatConfig</a>, <a href="#monitoring.coreos.com/v1beta1.SNSConfig">SNSConfig</a>, <a href="#monitoring.coreos.com/v1beta1.SlackConfig">SlackConfig</a>, <a href="#monitoring.coreos.com/v1beta1.TelegramConfig">TelegramConfig</a>, <a href="#monitoring.coreos.com/v1beta1.VictorOpsConfig">VictorOpsConfig</a>, <a href="#monitoring.coreos.com/v1beta1.WeChatConfig">WeChatConfig</a>, <a href="#monitoring.coreos.com/v1beta1.WebexConfig">WebexConfig</a>, <a href="#monitoring.coreos.com/v1beta1.WebhookConfig">WebhookConfig</a>)
 </p>
 <div>
 <p>HTTPConfig defines a client HTTP configuration.
@@ -34893,6 +36804,382 @@ It requires Alertmanager &gt;= 0.26.0.</p>
 It requires Alertmanager &gt;= 0.28.0.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>rocketchatConfigs</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1beta1.RocketChatConfig">
+[]RocketChatConfig
+</a>
+</em>
+</td>
+<td>
+<p>List of RocketChat configurations.
+It requires Alertmanager &gt;= 0.28.0.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="monitoring.coreos.com/v1beta1.RocketChatActionConfig">RocketChatActionConfig
+</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1beta1.RocketChatConfig">RocketChatConfig</a>)
+</p>
+<div>
+<p>RocketChatActionConfig defines actions for RocketChat messages.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>text</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The button text.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>url</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1beta1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The URL the button links to.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>msg</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The message to send when the button is clicked.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="monitoring.coreos.com/v1beta1.RocketChatConfig">RocketChatConfig
+</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1beta1.Receiver">Receiver</a>)
+</p>
+<div>
+<p>RocketChatConfig configures notifications via RocketChat.
+It requires Alertmanager &gt;= 0.28.0.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>sendResolved</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to notify about resolved alerts.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>apiURL</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1beta1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The API URL for RocketChat.
+Defaults to <a href="https://open.rocket.chat/">https://open.rocket.chat/</a> if not specified.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>channel</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The channel to send alerts to.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>token</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#secretkeyselector-v1-core">
+Kubernetes core/v1.SecretKeySelector
+</a>
+</em>
+</td>
+<td>
+<p>The sender token.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>tokenID</code><br/>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#secretkeyselector-v1-core">
+Kubernetes core/v1.SecretKeySelector
+</a>
+</em>
+</td>
+<td>
+<p>The sender token ID.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>color</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The message color.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>emoji</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>If provided, the avatar will be displayed as an emoji.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>iconURL</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1beta1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Icon URL for the message.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>text</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The main message text.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>title</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The message title.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>titleLink</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The title link for the message.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>fields</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1beta1.RocketChatFieldConfig">
+[]RocketChatFieldConfig
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Additional fields for the message.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>shortFields</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to use short fields.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>imageURL</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1beta1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Image URL for the message.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>thumbURL</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1beta1.URL">
+URL
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Thumbnail URL for the message.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>linkNames</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether to enable link names.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>actions</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1beta1.RocketChatActionConfig">
+[]RocketChatActionConfig
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Actions to include in the message.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>httpConfig</code><br/>
+<em>
+<a href="#monitoring.coreos.com/v1beta1.HTTPConfig">
+HTTPConfig
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HTTP client configuration.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="monitoring.coreos.com/v1beta1.RocketChatFieldConfig">RocketChatFieldConfig
+</h3>
+<p>
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1beta1.RocketChatConfig">RocketChatConfig</a>)
+</p>
+<div>
+<p>RocketChatFieldConfig defines a field for RocketChat messages.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>title</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The field title.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>value</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>The field value.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>short</code><br/>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Whether the field is displayed in a compact form.</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="monitoring.coreos.com/v1beta1.Route">Route
@@ -36086,7 +38373,7 @@ Time
 <h3 id="monitoring.coreos.com/v1beta1.URL">URL
 (<code>string</code> alias)</h3>
 <p>
-(<em>Appears on:</em><a href="#monitoring.coreos.com/v1beta1.DiscordConfig">DiscordConfig</a>, <a href="#monitoring.coreos.com/v1beta1.WebexConfig">WebexConfig</a>)
+(<em>Appears on:</em><a href="#monitoring.coreos.com/v1beta1.DiscordConfig">DiscordConfig</a>, <a href="#monitoring.coreos.com/v1beta1.RocketChatActionConfig">RocketChatActionConfig</a>, <a href="#monitoring.coreos.com/v1beta1.RocketChatConfig">RocketChatConfig</a>, <a href="#monitoring.coreos.com/v1beta1.WebexConfig">WebexConfig</a>)
 </p>
 <div>
 <p>URL represents a valid URL</p>

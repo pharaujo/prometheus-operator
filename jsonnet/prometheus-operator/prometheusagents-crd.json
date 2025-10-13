@@ -4,7 +4,7 @@
   "metadata": {
     "annotations": {
       "controller-gen.kubebuilder.io/version": "v0.18.0",
-      "operator.prometheus.io/version": "0.82.2"
+      "operator.prometheus.io/version": "0.85.0"
     },
     "name": "prometheusagents.monitoring.coreos.com"
   },
@@ -988,6 +988,50 @@
                       },
                       "host": {
                         "description": "Kubernetes API address consisting of a hostname or IP address followed\nby an optional port number.",
+                        "type": "string"
+                      },
+                      "noProxy": {
+                        "description": "`noProxy` is a comma-separated string that can contain IPs, CIDR notation, domain names\nthat should be excluded from proxying. IP and domain names can\ncontain port numbers.\n\nIt requires Prometheus >= v2.43.0, Alertmanager >= v0.25.0 or Thanos >= v0.32.0.",
+                        "type": "string"
+                      },
+                      "proxyConnectHeader": {
+                        "additionalProperties": {
+                          "items": {
+                            "description": "SecretKeySelector selects a key of a Secret.",
+                            "properties": {
+                              "key": {
+                                "description": "The key of the secret to select from.  Must be a valid secret key.",
+                                "type": "string"
+                              },
+                              "name": {
+                                "default": "",
+                                "description": "Name of the referent.\nThis field is effectively required, but due to backwards compatibility is\nallowed to be empty. Instances of this type with an empty value here are\nalmost certainly wrong.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
+                                "type": "string"
+                              },
+                              "optional": {
+                                "description": "Specify whether the Secret or its key must be defined",
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "key"
+                            ],
+                            "type": "object",
+                            "x-kubernetes-map-type": "atomic"
+                          },
+                          "type": "array"
+                        },
+                        "description": "ProxyConnectHeader optionally specifies headers to send to\nproxies during CONNECT requests.\n\nIt requires Prometheus >= v2.43.0, Alertmanager >= v0.25.0 or Thanos >= v0.32.0.",
+                        "type": "object",
+                        "x-kubernetes-map-type": "atomic"
+                      },
+                      "proxyFromEnvironment": {
+                        "description": "Whether to use the proxy configuration defined by environment variables (HTTP_PROXY, HTTPS_PROXY, and NO_PROXY).\n\nIt requires Prometheus >= v2.43.0, Alertmanager >= v0.25.0 or Thanos >= v0.32.0.",
+                        "type": "boolean"
+                      },
+                      "proxyUrl": {
+                        "description": "`proxyURL` defines the HTTP proxy server to use.",
+                        "pattern": "^(http|https|socks5)://.+$",
                         "type": "string"
                       },
                       "tlsConfig": {
@@ -2463,6 +2507,10 @@
                     },
                     "type": "array"
                   },
+                  "convertClassicHistogramsToNHCB": {
+                    "description": "Whether to convert all scraped classic histograms into a native\nhistogram with custom buckets.\n\nIt requires Prometheus >= v3.4.0.",
+                    "type": "boolean"
+                  },
                   "dnsConfig": {
                     "description": "Defines the DNS configuration for the pods.",
                     "properties": {
@@ -2666,7 +2714,11 @@
                     "x-kubernetes-list-type": "map"
                   },
                   "hostNetwork": {
-                    "description": "Use the host's network namespace if true.\n\nMake sure to understand the security implications if you want to enable\nit (https://kubernetes.io/docs/concepts/configuration/overview/).\n\nWhen hostNetwork is enabled, this will set the DNS policy to\n`ClusterFirstWithHostNet` automatically (unless `.spec.DNSPolicy` is set\nto a different value).",
+                    "description": "Use the host's network namespace if true.\n\nMake sure to understand the security implications if you want to enable\nit (https://kubernetes.io/docs/concepts/configuration/overview/ ).\n\nWhen hostNetwork is enabled, this will set the DNS policy to\n`ClusterFirstWithHostNet` automatically (unless `.spec.DNSPolicy` is set\nto a different value).",
+                    "type": "boolean"
+                  },
+                  "hostUsers": {
+                    "description": "HostUsers supports the user space in Kubernetes.\n\nMore info: https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/\n\nThe feature requires at least Kubernetes 1.28 with the `UserNamespacesSupport` feature gate enabled.\nStarting Kubernetes 1.33, the feature is enabled by default.",
                     "type": "boolean"
                   },
                   "ignoreNamespaceSelectors": {
@@ -4023,8 +4075,9 @@
                     "type": "integer"
                   },
                   "minReadySeconds": {
-                    "description": "Minimum number of seconds for which a newly created Pod should be ready\nwithout any of its container crashing for it to be considered available.\nDefaults to 0 (pod will be considered available as soon as it is ready)\n\nThis is an alpha field from kubernetes 1.22 until 1.24 which requires\nenabling the StatefulSetMinReadySeconds feature gate.",
+                    "description": "Minimum number of seconds for which a newly created Pod should be ready\nwithout any of its container crashing for it to be considered available.\n\nIf unset, pods will be considered available as soon as they are ready.",
                     "format": "int32",
+                    "minimum": 0,
                     "type": "integer"
                   },
                   "mode": {
@@ -4035,8 +4088,18 @@
                     ],
                     "type": "string"
                   },
+                  "nameEscapingScheme": {
+                    "description": "Specifies the character escaping scheme that will be requested when scraping\nfor metric and label names that do not conform to the legacy Prometheus\ncharacter set.\n\nIt requires Prometheus >= v3.4.0.",
+                    "enum": [
+                      "AllowUTF8",
+                      "Underscores",
+                      "Dots",
+                      "Values"
+                    ],
+                    "type": "string"
+                  },
                   "nameValidationScheme": {
-                    "description": "Specifies the validation scheme for metric and label names.",
+                    "description": "Specifies the validation scheme for metric and label names.\n\nIt requires Prometheus >= v2.55.0.",
                     "enum": [
                       "UTF8",
                       "Legacy"
@@ -4057,12 +4120,26 @@
                         "description": "Configures optional translation of OTLP explicit bucket histograms into native histograms with custom buckets.\nIt requires Prometheus >= v3.4.0.",
                         "type": "boolean"
                       },
+                      "ignoreResourceAttributes": {
+                        "description": "List of OpenTelemetry resource attributes to ignore when `promoteAllResourceAttributes` is true.\n\nIt requires `promoteAllResourceAttributes` to be true.\nIt requires Prometheus >= v3.5.0.",
+                        "items": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "minItems": 1,
+                        "type": "array",
+                        "x-kubernetes-list-type": "set"
+                      },
                       "keepIdentifyingResourceAttributes": {
                         "description": "Enables adding `service.name`, `service.namespace` and `service.instance.id`\nresource attributes to the `target_info` metric, on top of converting them into the `instance` and `job` labels.\n\nIt requires Prometheus >= v3.1.0.",
                         "type": "boolean"
                       },
+                      "promoteAllResourceAttributes": {
+                        "description": "Promote all resource attributes to metric labels except the ones defined in `ignoreResourceAttributes`.\n\nCannot be true when `promoteResourceAttributes` is defined.\nIt requires Prometheus >= v3.5.0.",
+                        "type": "boolean"
+                      },
                       "promoteResourceAttributes": {
-                        "description": "List of OpenTelemetry Attributes that should be promoted to metric labels, defaults to none.",
+                        "description": "List of OpenTelemetry Attributes that should be promoted to metric labels, defaults to none.\nCannot be defined when `promoteAllResourceAttributes` is true.",
                         "items": {
                           "minLength": 1,
                           "type": "string"
@@ -4116,18 +4193,18 @@
                         "additionalProperties": {
                           "type": "string"
                         },
-                        "description": "Annotations is an unstructured key value map stored with a resource that may be\nset by external tools to store and retrieve arbitrary metadata. They are not\nqueryable and should be preserved when modifying objects.\nMore info: http://kubernetes.io/docs/user-guide/annotations",
+                        "description": "Annotations is an unstructured key value map stored with a resource that may be\nset by external tools to store and retrieve arbitrary metadata. They are not\nqueryable and should be preserved when modifying objects.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/",
                         "type": "object"
                       },
                       "labels": {
                         "additionalProperties": {
                           "type": "string"
                         },
-                        "description": "Map of string keys and values that can be used to organize and categorize\n(scope and select) objects. May match selectors of replication controllers\nand services.\nMore info: http://kubernetes.io/docs/user-guide/labels",
+                        "description": "Map of string keys and values that can be used to organize and categorize\n(scope and select) objects. May match selectors of replication controllers\nand services.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/",
                         "type": "object"
                       },
                       "name": {
-                        "description": "Name must be unique within a namespace. Is required when creating resources, although\nsome resources may allow a client to request the generation of an appropriate name\nautomatically. Name is primarily intended for creation idempotence and configuration\ndefinition.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#names",
+                        "description": "Name must be unique within a namespace. Is required when creating resources, although\nsome resources may allow a client to request the generation of an appropriate name\nautomatically. Name is primarily intended for creation idempotence and configuration\ndefinition.\nCannot be updated.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/",
                         "type": "string"
                       }
                     },
@@ -5815,6 +5892,10 @@
                     ],
                     "x-kubernetes-list-type": "map"
                   },
+                  "scrapeClassicHistograms": {
+                    "description": "Whether to scrape a classic histogram that is also exposed as a native histogram.\n\nNotice: `scrapeClassicHistograms` corresponds to the `always_scrape_classic_histograms` field in the Prometheus configuration.\n\nIt requires Prometheus >= v3.5.0.",
+                    "type": "boolean"
+                  },
                   "scrapeConfigNamespaceSelector": {
                     "description": "Namespaces to match for ScrapeConfig discovery. An empty label selector\nmatches all namespaces. A null label selector matches the current\nnamespace only.\n\nNote that the ScrapeConfig custom resource definition is currently at Alpha level.",
                     "properties": {
@@ -6433,18 +6514,18 @@
                                 "additionalProperties": {
                                   "type": "string"
                                 },
-                                "description": "Annotations is an unstructured key value map stored with a resource that may be\nset by external tools to store and retrieve arbitrary metadata. They are not\nqueryable and should be preserved when modifying objects.\nMore info: http://kubernetes.io/docs/user-guide/annotations",
+                                "description": "Annotations is an unstructured key value map stored with a resource that may be\nset by external tools to store and retrieve arbitrary metadata. They are not\nqueryable and should be preserved when modifying objects.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/",
                                 "type": "object"
                               },
                               "labels": {
                                 "additionalProperties": {
                                   "type": "string"
                                 },
-                                "description": "Map of string keys and values that can be used to organize and categorize\n(scope and select) objects. May match selectors of replication controllers\nand services.\nMore info: http://kubernetes.io/docs/user-guide/labels",
+                                "description": "Map of string keys and values that can be used to organize and categorize\n(scope and select) objects. May match selectors of replication controllers\nand services.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/",
                                 "type": "object"
                               },
                               "name": {
-                                "description": "Name must be unique within a namespace. Is required when creating resources, although\nsome resources may allow a client to request the generation of an appropriate name\nautomatically. Name is primarily intended for creation idempotence and configuration\ndefinition.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#names",
+                                "description": "Name must be unique within a namespace. Is required when creating resources, although\nsome resources may allow a client to request the generation of an appropriate name\nautomatically. Name is primarily intended for creation idempotence and configuration\ndefinition.\nCannot be updated.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/",
                                 "type": "string"
                               }
                             },
@@ -8842,7 +8923,33 @@
                     "type": "object"
                   }
                 },
-                "type": "object"
+                "type": "object",
+                "x-kubernetes-validations": [
+                  {
+                    "message": "replicas cannot be set when mode is DaemonSet",
+                    "rule": "!(has(self.mode) && self.mode == 'DaemonSet' && has(self.replicas))"
+                  },
+                  {
+                    "message": "storage cannot be set when mode is DaemonSet",
+                    "rule": "!(has(self.mode) && self.mode == 'DaemonSet' && has(self.storage))"
+                  },
+                  {
+                    "message": "shards cannot be greater than 1 when mode is DaemonSet",
+                    "rule": "!(has(self.mode) && self.mode == 'DaemonSet' && has(self.shards) && self.shards > 1)"
+                  },
+                  {
+                    "message": "persistentVolumeClaimRetentionPolicy cannot be set when mode is DaemonSet",
+                    "rule": "!(has(self.mode) && self.mode == 'DaemonSet' && has(self.persistentVolumeClaimRetentionPolicy))"
+                  },
+                  {
+                    "message": "scrapeConfigSelector cannot be set when mode is DaemonSet",
+                    "rule": "!(has(self.mode) && self.mode == 'DaemonSet' && has(self.scrapeConfigSelector))"
+                  },
+                  {
+                    "message": "probeSelector cannot be set when mode is DaemonSet",
+                    "rule": "!(has(self.mode) && self.mode == 'DaemonSet' && has(self.probeSelector))"
+                  }
+                ]
               },
               "status": {
                 "description": "Most recent observed status of the Prometheus cluster. Read-only.\nMore info:\nhttps://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#spec-and-status",

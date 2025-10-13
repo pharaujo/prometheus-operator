@@ -20,7 +20,6 @@ import (
 	"log/slog"
 	"math"
 	"net/url"
-	"os"
 	"path"
 	"reflect"
 	"regexp"
@@ -36,7 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
-	"github.com/prometheus-operator/prometheus-operator/internal/util"
+	sortutil "github.com/prometheus-operator/prometheus-operator/internal/sortutil"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	monitoringv1alpha1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/prometheus-operator/prometheus-operator/pkg/assets"
@@ -122,12 +121,7 @@ func NewConfigGenerator(
 	opts ...ConfigGeneratorOption,
 ) (*ConfigGenerator, error) {
 	if logger == nil {
-		logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			// slog level math.MaxInt means no logging
-			// We would like to use the slog buil-in No-op level once it is available
-			// More: https://github.com/golang/go/issues/62005
-			Level: slog.Level(math.MaxInt),
-		}))
+		logger = slog.New(slog.DiscardHandler)
 	}
 
 	cg := &ConfigGenerator{
@@ -493,7 +487,7 @@ func (cg *ConfigGenerator) addNativeHistogramConfig(cfg yaml.MapSlice, nhc monit
 func stringMapToMapSlice[V any](m map[string]V) yaml.MapSlice {
 	res := yaml.MapSlice{}
 
-	for _, k := range util.SortedKeys(m) {
+	for _, k := range sortutil.SortedKeys(m) {
 		res = append(res, yaml.MapItem{Key: k, Value: m[k]})
 	}
 
@@ -1184,11 +1178,11 @@ func (cg *ConfigGenerator) BuildCommonPrometheusArgs() []monitoringv1.Argument {
 
 func (cg *ConfigGenerator) BuildPodMetadata() (map[string]string, map[string]string) {
 	podAnnotations := map[string]string{
-		"kubectl.kubernetes.io/default-container": "prometheus",
+		operator.DefaultContainerAnnotationKey: "prometheus",
 	}
 
 	podLabels := map[string]string{
-		"app.kubernetes.io/version": cg.version.String(),
+		operator.ApplicationVersionLabelKey: cg.version.String(),
 	}
 
 	podMetadata := cg.prom.GetCommonPrometheusFields().PodMetadata
@@ -1331,9 +1325,6 @@ func (cg *ConfigGenerator) generatePodMonitorConfig(
 	if ep.Path != "" {
 		cfg = append(cfg, yaml.MapItem{Key: "metrics_path", Value: ep.Path})
 	}
-	if ep.ProxyURL != nil {
-		cfg = append(cfg, yaml.MapItem{Key: "proxy_url", Value: ep.ProxyURL})
-	}
 	if ep.Params != nil {
 		cfg = append(cfg, yaml.MapItem{Key: "params", Value: ep.Params})
 	}
@@ -1364,6 +1355,8 @@ func (cg *ConfigGenerator) generatePodMonitorConfig(
 	cfg = cg.addBasicAuthToYaml(cfg, s, ep.BasicAuth)
 	cfg = cg.addOAuth2ToYaml(cfg, s, ep.OAuth2)
 
+	cfg = cg.addProxyConfigtoYaml(cfg, s, ep.ProxyConfig)
+
 	cfg = cg.addAuthorizationToYaml(cfg, s, mergeSafeAuthorizationWithScrapeClass(ep.Authorization, scrapeClass))
 
 	relabelings := initRelabelings()
@@ -1377,7 +1370,7 @@ func (cg *ConfigGenerator) generatePodMonitorConfig(
 	// If roleSelector is set, we don't need to add the service labels to the relabeling rules.
 	if ptr.Deref(m.Spec.SelectorMechanism, monitoringv1.SelectorMechanismRelabel) == monitoringv1.SelectorMechanismRelabel {
 
-		for _, k := range util.SortedKeys(m.Spec.Selector.MatchLabels) {
+		for _, k := range sortutil.SortedKeys(m.Spec.Selector.MatchLabels) {
 			relabelings = append(relabelings, yaml.MapSlice{
 				{Key: "action", Value: "keep"},
 				{Key: "source_labels", Value: []string{"__meta_kubernetes_pod_label_" + sanitizeLabelName(k), "__meta_kubernetes_pod_labelpresent_" + sanitizeLabelName(k)}},
@@ -1576,14 +1569,22 @@ func (cg *ConfigGenerator) generateProbeConfig(
 	if m.Spec.ProberSpec.Scheme != "" {
 		cfg = append(cfg, yaml.MapItem{Key: "scheme", Value: m.Spec.ProberSpec.Scheme})
 	}
-	if m.Spec.ProberSpec.ProxyURL != "" {
-		cfg = append(cfg, yaml.MapItem{Key: "proxy_url", Value: m.Spec.ProberSpec.ProxyURL})
+
+	var paramsMapSlice yaml.MapSlice
+	if m.Spec.Module != "" {
+		paramsMapSlice = append(paramsMapSlice, yaml.MapItem{Key: "module", Value: []string{m.Spec.Module}})
 	}
 
-	if m.Spec.Module != "" {
-		cfg = append(cfg, yaml.MapItem{Key: "params", Value: yaml.MapSlice{
-			{Key: "module", Value: []string{m.Spec.Module}},
-		}})
+	for _, p := range m.Spec.Params {
+		if m.Spec.Module != "" && p.Name == "module" {
+			continue
+		}
+
+		paramsMapSlice = append(paramsMapSlice, yaml.MapItem{Key: p.Name, Value: p.Values})
+	}
+
+	if len(paramsMapSlice) != 0 {
+		cfg = append(cfg, yaml.MapItem{Key: "params", Value: paramsMapSlice})
 	}
 
 	cpf := cg.prom.GetCommonPrometheusFields()
@@ -1614,6 +1615,8 @@ func (cg *ConfigGenerator) generateProbeConfig(
 	labeler := namespacelabeler.New(cpf.EnforcedNamespaceLabel, cpf.ExcludedFromEnforcement, false)
 
 	s := store.ForNamespace(m.Namespace)
+
+	cfg = cg.addProxyConfigtoYaml(cfg, s, m.Spec.ProberSpec.ProxyConfig)
 
 	// As stated in the CRD documentation, if both StaticConfig and Ingress are
 	// defined, the former takes precedence which is why the first case statement
@@ -1669,7 +1672,7 @@ func (cg *ConfigGenerator) generateProbeConfig(
 		// Generate kubernetes_sd_config section for the ingress resources.
 		// Filter targets by ingresses selected by the monitor.
 		// Exact label matches.
-		for _, k := range util.SortedKeys(m.Spec.Targets.Ingress.Selector.MatchLabels) {
+		for _, k := range sortutil.SortedKeys(m.Spec.Targets.Ingress.Selector.MatchLabels) {
 			relabelings = append(relabelings, yaml.MapSlice{
 				{Key: "action", Value: "keep"},
 				{Key: "source_labels", Value: []string{"__meta_kubernetes_ingress_label_" + sanitizeLabelName(k), "__meta_kubernetes_ingress_labelpresent_" + sanitizeLabelName(k)}},
@@ -1833,9 +1836,6 @@ func (cg *ConfigGenerator) generateServiceMonitorConfig(
 	if ep.Path != "" {
 		cfg = append(cfg, yaml.MapItem{Key: "metrics_path", Value: ep.Path})
 	}
-	if ep.ProxyURL != nil {
-		cfg = append(cfg, yaml.MapItem{Key: "proxy_url", Value: ep.ProxyURL})
-	}
 	if ep.Params != nil {
 		cfg = append(cfg, yaml.MapItem{Key: "params", Value: ep.Params})
 	}
@@ -1848,6 +1848,8 @@ func (cg *ConfigGenerator) generateServiceMonitorConfig(
 	if ep.EnableHttp2 != nil {
 		cfg = cg.WithMinimumVersion("2.35.0").AppendMapItem(cfg, "enable_http2", *ep.EnableHttp2)
 	}
+
+	cfg = cg.addProxyConfigtoYaml(cfg, s, ep.ProxyConfig)
 
 	cfg = cg.addOAuth2ToYaml(cfg, s, ep.OAuth2)
 
@@ -1880,7 +1882,7 @@ func (cg *ConfigGenerator) generateServiceMonitorConfig(
 	// Exact label matches.
 	// If roleSelector is set, we don't need to add the service labels to the relabeling rules.
 	if ptr.Deref(m.Spec.SelectorMechanism, monitoringv1.SelectorMechanismRelabel) == monitoringv1.SelectorMechanismRelabel {
-		for _, k := range util.SortedKeys(m.Spec.Selector.MatchLabels) {
+		for _, k := range sortutil.SortedKeys(m.Spec.Selector.MatchLabels) {
 			relabelings = append(relabelings, yaml.MapSlice{
 				{Key: "action", Value: "keep"},
 				{Key: "source_labels", Value: []string{"__meta_kubernetes_service_label_" + sanitizeLabelName(k), "__meta_kubernetes_service_labelpresent_" + sanitizeLabelName(k)}},
@@ -2273,6 +2275,8 @@ func (cg *ConfigGenerator) generateK8SSDConfig(
 		k8sSDConfig = cg.addAuthorizationToYaml(k8sSDConfig, store, apiserverConfig.Authorization)
 
 		k8sSDConfig = cg.addTLStoYaml(k8sSDConfig, store, apiserverConfig.TLSConfig)
+
+		k8sSDConfig = cg.addProxyConfigtoYaml(k8sSDConfig, store, apiserverConfig.ProxyConfig)
 	}
 
 	if attachMetadataConfig != nil {
@@ -2950,7 +2954,7 @@ func (cg *ConfigGenerator) appendServiceMonitorConfigs(
 	store *assets.StoreBuilder,
 	shards int32) []yaml.MapSlice {
 
-	for _, identifier := range util.SortedKeys(serviceMonitors) {
+	for _, identifier := range sortutil.SortedKeys(serviceMonitors) {
 		for i, ep := range serviceMonitors[identifier].Spec.Endpoints {
 			slices = append(slices,
 				cg.WithKeyVals("service_monitor", identifier).generateServiceMonitorConfig(
@@ -2973,7 +2977,7 @@ func (cg *ConfigGenerator) appendPodMonitorConfigs(
 	store *assets.StoreBuilder,
 	shards int32) []yaml.MapSlice {
 
-	for _, identifier := range util.SortedKeys(podMonitors) {
+	for _, identifier := range sortutil.SortedKeys(podMonitors) {
 		for i, ep := range podMonitors[identifier].Spec.PodMetricsEndpoints {
 			slices = append(slices,
 				cg.WithKeyVals("pod_monitor", identifier).generatePodMonitorConfig(
@@ -2996,7 +3000,7 @@ func (cg *ConfigGenerator) appendProbeConfigs(
 	store *assets.StoreBuilder,
 	shards int32) []yaml.MapSlice {
 
-	for _, identifier := range util.SortedKeys(probes) {
+	for _, identifier := range sortutil.SortedKeys(probes) {
 		slices = append(slices,
 			cg.WithKeyVals("probe", identifier).generateProbeConfig(
 				probes[identifier],
@@ -3112,7 +3116,7 @@ func (cg *ConfigGenerator) appendScrapeConfigs(
 	store *assets.StoreBuilder,
 	shards int32) ([]yaml.MapSlice, error) {
 
-	for _, identifier := range util.SortedKeys(scrapeConfigs) {
+	for _, identifier := range sortutil.SortedKeys(scrapeConfigs) {
 		cfgGenerator := cg.WithKeyVals("scrapeconfig", identifier)
 		scrapeConfig, err := cfgGenerator.generateScrapeConfig(scrapeConfigs[identifier], store.ForNamespace(scrapeConfigs[identifier].GetNamespace()), shards)
 
@@ -4247,6 +4251,12 @@ func (cg *ConfigGenerator) generateScrapeConfig(
 					Value: config.RefreshInterval,
 				})
 			}
+
+			if config.LabelSelector != nil && len(*config.LabelSelector) > 0 {
+				configs[i] = cg.WithMinimumVersion("3.5.0").AppendMapItem(configs[i],
+					"label_selector",
+					config.LabelSelector)
+			}
 		}
 		cfg = append(cfg, yaml.MapItem{
 			Key:   "hetzner_sd_configs",
@@ -4744,6 +4754,9 @@ func (cg *ConfigGenerator) generateScrapeConfig(
 		cfg = append(cfg, yaml.MapItem{Key: "metric_relabel_configs", Value: generateRelabelConfig(metricRelabelings)})
 	}
 
+	cfg = cg.appendNameValidationScheme(cfg, sc.Spec.NameValidationScheme)
+	cfg = cg.appendNameEscapingScheme(cfg, sc.Spec.NameEscapingScheme)
+
 	return cfg, nil
 }
 
@@ -4765,6 +4778,13 @@ func (cg *ConfigGenerator) appendOTLPConfig(cfg yaml.MapSlice) (yaml.MapSlice, e
 
 	if cg.version.LT(semver.MustParse("3.4.0")) && ptr.Deref(otlpConfig.TranslationStrategy, "") == monitoringv1.NoTranslation {
 		return cfg, fmt.Errorf("nameValidationScheme %q is only supported from Prometheus version 3.4.0 ", monitoringv1.NoTranslation)
+	}
+
+	if cg.version.GTE(semver.MustParse("3.5.0")) {
+		err := otlpConfig.Validate()
+		if err != nil {
+			return cfg, err
+		}
 	}
 
 	otlp := yaml.MapSlice{}
@@ -4791,6 +4811,18 @@ func (cg *ConfigGenerator) appendOTLPConfig(cfg yaml.MapSlice) (yaml.MapSlice, e
 		otlp = cg.WithMinimumVersion("3.4.0").AppendMapItem(otlp,
 			"convert_histograms_to_nhcb",
 			otlpConfig.ConvertHistogramsToNHCB)
+	}
+
+	if otlpConfig.PromoteAllResourceAttributes != nil {
+		otlp = cg.WithMinimumVersion("3.5.0").AppendMapItem(otlp,
+			"promote_all_resource_attributes",
+			otlpConfig.PromoteAllResourceAttributes)
+	}
+
+	if len(otlpConfig.IgnoreResourceAttributes) > 0 {
+		otlp = cg.WithMinimumVersion("3.5.0").AppendMapItem(otlp,
+			"ignore_resource_attributes",
+			otlpConfig.IgnoreResourceAttributes)
 	}
 
 	if len(otlp) == 0 {
@@ -4883,6 +4915,46 @@ func (cg *ConfigGenerator) appendNameValidationScheme(cfg yaml.MapSlice, nameVal
 	return cg.WithMinimumVersion("3.0.0").AppendMapItem(cfg, "metric_name_validation_scheme", strings.ToLower(nameValidationSchemeValue))
 }
 
+func (cg *ConfigGenerator) appendNameEscapingScheme(cfg yaml.MapSlice, nameEscapingScheme *monitoringv1.NameEscapingSchemeOptions) yaml.MapSlice {
+	if nameEscapingScheme == nil {
+		return cfg
+	}
+
+	// conversion to prometheus values.
+	nameMap := map[monitoringv1.NameEscapingSchemeOptions]string{
+		monitoringv1.AllowUTF8NameEscapingScheme:   "allow-utf-8",
+		monitoringv1.UnderscoresNameEscapingScheme: "underscores",
+		monitoringv1.DotsNameEscapingScheme:        "dots",
+		monitoringv1.ValuesNameEscapingScheme:      "values",
+	}
+
+	if v, ok := nameMap[*nameEscapingScheme]; ok {
+		return cg.WithMinimumVersion("3.4.0").AppendMapItem(cfg, "metric_name_escaping_scheme", v)
+	}
+
+	return cfg
+}
+
+func (cg *ConfigGenerator) appendConvertClassicHistogramsToNHCB(cfg yaml.MapSlice) yaml.MapSlice {
+	cpf := cg.prom.GetCommonPrometheusFields()
+
+	if cpf.ConvertClassicHistogramsToNHCB == nil {
+		return cfg
+	}
+
+	return cg.WithMinimumVersion("3.4.0").AppendMapItem(cfg, "convert_classic_histograms_to_nhcb", *cpf.ConvertClassicHistogramsToNHCB)
+}
+
+func (cg *ConfigGenerator) appendConvertScrapeClassicHistograms(cfg yaml.MapSlice) yaml.MapSlice {
+	cpf := cg.prom.GetCommonPrometheusFields()
+
+	if cpf.ScrapeClassicHistograms == nil {
+		return cfg
+	}
+
+	return cg.WithMinimumVersion("3.5.0").AppendMapItem(cfg, "always_scrape_classic_histograms", *cpf.ScrapeClassicHistograms)
+}
+
 func (cg *ConfigGenerator) getScrapeClassOrDefault(name *string) monitoringv1.ScrapeClass {
 	if name != nil {
 		if scrapeClass, found := cg.scrapeClasses[*name]; found {
@@ -4957,6 +5029,9 @@ func (cg *ConfigGenerator) buildGlobalConfig() yaml.MapSlice {
 	cfg = cg.appendScrapeLimits(cfg)
 	cfg = cg.appendScrapeFailureLogFile(cfg, cg.prom.GetCommonPrometheusFields().ScrapeFailureLogFile)
 	cfg = cg.appendNameValidationScheme(cfg, cpf.NameValidationScheme)
+	cfg = cg.appendNameEscapingScheme(cfg, cpf.NameEscapingScheme)
+	cfg = cg.appendConvertClassicHistogramsToNHCB(cfg)
+	cfg = cg.appendConvertScrapeClassicHistograms(cfg)
 
 	return cfg
 }

@@ -19,9 +19,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"log/slog"
-	"math"
 	"math/big"
-	"os"
 	"sort"
 	"strings"
 	"time"
@@ -37,7 +35,7 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/prometheus-operator/prometheus-operator/internal/util"
+	sortutil "github.com/prometheus-operator/prometheus-operator/internal/sortutil"
 	"github.com/prometheus-operator/prometheus-operator/pkg/k8sutil"
 )
 
@@ -68,12 +66,7 @@ func NewNamespaceListWatchFromClient(
 	allowedNamespaces, deniedNamespaces map[string]struct{},
 ) (cache.ListerWatcher, bool, error) {
 	if l == nil {
-		l = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			// slog level math.MaxInt means no logging
-			// We would like to use the slog buil-in No-op level once it is available
-			// More: https://github.com/golang/go/issues/62005
-			Level: slog.Level(math.MaxInt),
-		}))
+		l = slog.New(slog.DiscardHandler)
 	}
 
 	listWatchAllowed, reasons, err := k8sutil.IsAllowed(
@@ -218,7 +211,7 @@ func TweakByLabel(options *metav1.ListOptions, label string, filter FilterType, 
 	default:
 		panic(fmt.Sprintf("unsupported filter: %q", filter))
 	}
-	selectors := []string{fmt.Sprintf("%s %s (%s)", label, op, strings.Join(util.SortedKeys(valueSet), ","))}
+	selectors := []string{fmt.Sprintf("%s %s (%s)", label, op, strings.Join(sortutil.SortedKeys(valueSet), ","))}
 
 	if options.LabelSelector != "" {
 		selectors = append(selectors, options.LabelSelector)
@@ -267,12 +260,7 @@ var _ = cache.ListerWatcher(&pollBasedListerWatcher{})
 
 func newPollBasedListerWatcher(ctx context.Context, l *slog.Logger, corev1Client corev1.CoreV1Interface, namespaces []string) *pollBasedListerWatcher {
 	if l == nil {
-		l = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			// slog level math.MaxInt means no logging
-			// We would like to use the slog buil-in No-op level once it is available
-			// More: https://github.com/golang/go/issues/62005
-			Level: slog.Level(math.MaxInt),
-		}))
+		l = slog.New(slog.DiscardHandler)
 	}
 
 	pblw := &pollBasedListerWatcher{
