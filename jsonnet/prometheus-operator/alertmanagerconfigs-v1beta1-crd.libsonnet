@@ -862,6 +862,10 @@
                             minLength: 1,
                             type: 'string',
                           },
+                          forceImplicitTLS: {
+                            description: 'forceImplicitTLS defines whether to force use of implicit TLS (direct TLS connection) for better security.\ntrue: force use of implicit TLS (direct TLS connection on any port)\nfalse: force disable implicit TLS (use explicit TLS/STARTTLS if required)\nnil (default): auto-detect based on port (465=implicit, other=explicit) for backward compatibility\nIt requires Alertmanager >= v0.31.0.',
+                            type: 'boolean',
+                          },
                           from: {
                             description: 'from defines the sender address for email notifications.\nThis appears as the "From" field in the email header.',
                             minLength: 1,
@@ -5721,6 +5725,31 @@
                             ],
                             type: 'object',
                           },
+                          appToken: {
+                            description: "appToken defines the secret's key that contains the Slack app token.\nThe secret needs to be in the same namespace as the AlertmanagerConfig\nobject and accessible by the Prometheus Operator.\nIt requires Alertmanager >= v0.30.0.",
+                            properties: {
+                              key: {
+                                description: 'key defines the key of the secret to select from.  Must be a valid secret key.',
+                                minLength: 1,
+                                type: 'string',
+                              },
+                              name: {
+                                description: "name defines the name of the secret in the object's namespace to select from.",
+                                minLength: 1,
+                                type: 'string',
+                              },
+                            },
+                            required: [
+                              'key',
+                              'name',
+                            ],
+                            type: 'object',
+                          },
+                          appURL: {
+                            description: 'appURL defines the URL used for Slack App message posting API.\nIt requires Alertmanager >= v0.30.0.',
+                            pattern: '^https?://.+$',
+                            type: 'string',
+                          },
                           callbackId: {
                             description: 'callbackId defines an identifier for the message used in interactive components.',
                             minLength: 1,
@@ -6430,6 +6459,11 @@
                           linkNames: {
                             description: 'linkNames enables automatic linking of channel names and usernames in the message.\nWhen true, @channel and @username will be converted to clickable links.',
                             type: 'boolean',
+                          },
+                          messageText: {
+                            description: "messageText defines text content of the Slack message.\nIf set, this is sent as the top-level 'text' field in the Slack payload.\nIt requires Alertmanager >= v0.31.0.",
+                            minLength: 1,
+                            type: 'string',
                           },
                           mrkdwnIn: {
                             description: 'mrkdwnIn defines which fields should be parsed as Slack markdown.\nValid values include "pretext", "text", and "fields".',

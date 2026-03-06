@@ -238,6 +238,16 @@ func (in *AlertmanagerGlobalConfig) DeepCopyInto(out *AlertmanagerGlobalConfig) 
 		*out = new(corev1.SecretKeySelector)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.SlackAppToken != nil {
+		in, out := &in.SlackAppToken, &out.SlackAppToken
+		*out = new(corev1.SecretKeySelector)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.SlackAppURL != nil {
+		in, out := &in.SlackAppURL, &out.SlackAppURL
+		*out = new(URL)
+		**out = **in
+	}
 	if in.OpsGenieAPIURL != nil {
 		in, out := &in.OpsGenieAPIURL, &out.OpsGenieAPIURL
 		*out = new(corev1.SecretKeySelector)
@@ -1575,6 +1585,11 @@ func (in *GlobalSMTPConfig) DeepCopyInto(out *GlobalSMTPConfig) {
 		in, out := &in.TLSConfig, &out.TLSConfig
 		*out = new(SafeTLSConfig)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.ForceImplicitTLS != nil {
+		in, out := &in.ForceImplicitTLS, &out.ForceImplicitTLS
+		*out = new(bool)
+		**out = **in
 	}
 }
 

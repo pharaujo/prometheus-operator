@@ -1766,6 +1766,34 @@
                             "type": "object",
                             "x-kubernetes-map-type": "atomic"
                           },
+                          "slackAppToken": {
+                            "description": "slackAppToken defines the default Slack App Token.\nIt requires Alertmanager >= v0.30.0.",
+                            "properties": {
+                              "key": {
+                                "description": "The key of the secret to select from.  Must be a valid secret key.",
+                                "type": "string"
+                              },
+                              "name": {
+                                "default": "",
+                                "description": "Name of the referent.\nThis field is effectively required, but due to backwards compatibility is\nallowed to be empty. Instances of this type with an empty value here are\nalmost certainly wrong.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
+                                "type": "string"
+                              },
+                              "optional": {
+                                "description": "Specify whether the Secret or its key must be defined",
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "key"
+                            ],
+                            "type": "object",
+                            "x-kubernetes-map-type": "atomic"
+                          },
+                          "slackAppUrl": {
+                            "description": "slackAppUrl defines the default URL for Slack App message posting API.\nIt requires Alertmanager >= v0.30.0.",
+                            "pattern": "^(http|https)://.+$",
+                            "type": "string"
+                          },
                           "smtp": {
                             "description": "smtp defines global SMTP parameters.",
                             "properties": {
@@ -1822,6 +1850,10 @@
                               "authUsername": {
                                 "description": "authUsername represents SMTP Auth using CRAM-MD5, LOGIN and PLAIN. If empty, Alertmanager doesn't authenticate to the SMTP server.",
                                 "type": "string"
+                              },
+                              "forceImplicitTLS": {
+                                "description": "forceImplicitTLS defines whether to force use of implicit TLS (direct TLS connection) for better security.\ntrue: force use of implicit TLS (direct TLS connection on any port)\nfalse: force disable implicit TLS (use explicit TLS/STARTTLS if required)\nnil (default): auto-detect based on port (465=implicit, other=explicit) for backward compatibility\nIt requires Alertmanager >= v0.31.0.",
+                                "type": "boolean"
                               },
                               "from": {
                                 "description": "from defines the default SMTP From header field.",

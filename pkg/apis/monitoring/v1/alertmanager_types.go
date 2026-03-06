@@ -502,6 +502,16 @@ type AlertmanagerGlobalConfig struct {
 	// +optional
 	SlackAPIURL *v1.SecretKeySelector `json:"slackApiUrl,omitempty"`
 
+	// slackAppToken defines the default Slack App Token.
+	// It requires Alertmanager >= v0.30.0.
+	// +optional
+	SlackAppToken *v1.SecretKeySelector `json:"slackAppToken,omitempty"`
+
+	// slackAppUrl defines the default URL for Slack App message posting API.
+	// It requires Alertmanager >= v0.30.0.
+	// +optional
+	SlackAppURL *URL `json:"slackAppUrl,omitempty"`
+
 	// opsGenieApiUrl defines the default OpsGenie API URL.
 	// +optional
 	OpsGenieAPIURL *v1.SecretKeySelector `json:"opsGenieApiUrl,omitempty"`
@@ -580,6 +590,10 @@ func (a *Alertmanager) ExpectedReplicas() int {
 	return int(*a.Spec.Replicas)
 }
 
+func (a *Alertmanager) GetAvailableReplicas() int  { return int(a.Status.AvailableReplicas) }
+func (a *Alertmanager) GetUpdatedReplicas() int    { return int(a.Status.UpdatedReplicas) }
+func (a *Alertmanager) GetConditions() []Condition { return a.Status.Conditions }
+
 func (a *Alertmanager) SetReplicas(i int)            { a.Status.Replicas = int32(i) }
 func (a *Alertmanager) SetUpdatedReplicas(i int)     { a.Status.UpdatedReplicas = int32(i) }
 func (a *Alertmanager) SetAvailableReplicas(i int)   { a.Status.AvailableReplicas = int32(i) }
@@ -656,6 +670,14 @@ type GlobalSMTPConfig struct {
 	// tlsConfig defines the default TLS configuration for SMTP receivers
 	// +optional
 	TLSConfig *SafeTLSConfig `json:"tlsConfig,omitempty"`
+
+	// forceImplicitTLS defines whether to force use of implicit TLS (direct TLS connection) for better security.
+	// true: force use of implicit TLS (direct TLS connection on any port)
+	// false: force disable implicit TLS (use explicit TLS/STARTTLS if required)
+	// nil (default): auto-detect based on port (465=implicit, other=explicit) for backward compatibility
+	// It requires Alertmanager >= v0.31.0.
+	// +optional
+	ForceImplicitTLS *bool `json:"forceImplicitTLS,omitempty"` // nolint:kubeapilinter
 }
 
 // GlobalTelegramConfig configures global Telegram parameters.

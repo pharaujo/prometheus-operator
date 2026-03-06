@@ -393,6 +393,16 @@ type SlackConfig struct {
 	// object and accessible by the Prometheus Operator.
 	// +optional
 	APIURL *v1.SecretKeySelector `json:"apiURL,omitempty"`
+	// appToken defines the secret's key that contains the Slack app token.
+	// The secret needs to be in the same namespace as the AlertmanagerConfig
+	// object and accessible by the Prometheus Operator.
+	// It requires Alertmanager >= v0.30.0.
+	// +optional
+	AppToken *v1.SecretKeySelector `json:"appToken,omitempty"`
+	// appURL defines the URL used for Slack App message posting API.
+	// It requires Alertmanager >= v0.30.0.
+	// +optional
+	AppURL *URL `json:"appURL,omitempty"`
 	// channel defines the channel or user to send notifications to.
 	// +kubebuilder:validation:MinLength=1
 	// +optional
@@ -480,6 +490,12 @@ type SlackConfig struct {
 	// It requires Alertmanager >= v0.30.0.
 	// +optional
 	Timeout *monitoringv1.Duration `json:"timeout,omitempty"`
+	// messageText defines text content of the Slack message.
+	// If set, this is sent as the top-level 'text' field in the Slack payload.
+	// It requires Alertmanager >= v0.31.0.
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	MessageText *string `json:"messageText,omitempty"`
 }
 
 // SlackAction configures a single Slack action that is sent with each
@@ -897,6 +913,13 @@ type EmailConfig struct {
 	// This includes settings for certificates, CA validation, and TLS protocol options.
 	// +optional
 	TLSConfig *monitoringv1.SafeTLSConfig `json:"tlsConfig,omitempty"`
+	// forceImplicitTLS defines whether to force use of implicit TLS (direct TLS connection) for better security.
+	// true: force use of implicit TLS (direct TLS connection on any port)
+	// false: force disable implicit TLS (use explicit TLS/STARTTLS if required)
+	// nil (default): auto-detect based on port (465=implicit, other=explicit) for backward compatibility
+	// It requires Alertmanager >= v0.31.0.
+	// +optional
+	ForceImplicitTLS *bool `json:"forceImplicitTLS,omitempty"` // nolint:kubeapilinter
 }
 
 // VictorOpsConfig configures notifications via VictorOps.
