@@ -785,6 +785,17 @@ func (cb *ConfigBuilder) convertReceiver(ctx context.Context, in *monitoringv1al
 		}
 	}
 
+	var incidentioConfigs []*incidentioConfig
+	if l := len(in.IncidentioConfigs); l > 0 {
+		incidentioConfigs = make([]*incidentioConfig, l)
+		for i := range in.IncidentioConfigs {
+			receiver, err := cb.convertIncidentioConfig(ctx, in.IncidentioConfigs[i], crKey)
+			if err != nil {
+				return nil, fmt.Errorf("IncidentioConfig[%d]: %w", i, err)
+			}
+			incidentioConfigs[i] = receiver
+		}
+	}
 	return &receiver{
 		Name:              makeNamespacedString(in.Name, crKey),
 		OpsgenieConfigs:   opsgenieConfigs,
@@ -802,6 +813,7 @@ func (cb *ConfigBuilder) convertReceiver(ctx context.Context, in *monitoringv1al
 		MSTeamsConfigs:    msTeamsConfigs,
 		MSTeamsV2Configs:  msTeamsV2Configs,
 		RocketChatConfigs: rocketchatConfigs,
+		IncidentioConfigs: incidentioConfigs,
 	}, nil
 }
 
@@ -912,15 +924,11 @@ func (cb *ConfigBuilder) convertWebhookConfig(ctx context.Context, in monitoring
 		out.MaxAlerts = in.MaxAlerts
 	}
 
-	if in.Timeout != nil {
-		if *in.Timeout != "" {
-			timeout, err := model.ParseDuration(string(*in.Timeout))
-			if err != nil {
-				return nil, err
-			}
-			out.Timeout = &timeout
-		}
+	timeout, err := convertTimeout(in.Timeout)
+	if err != nil {
+		return nil, err
 	}
+	out.Timeout = timeout
 
 	return out, nil
 }
@@ -1159,15 +1167,11 @@ func (cb *ConfigBuilder) convertPagerdutyConfig(ctx context.Context, in monitori
 		out.Source = *in.Source
 	}
 
-	if in.Timeout != nil {
-		if *in.Timeout != "" {
-			timeout, err := model.ParseDuration(string(*in.Timeout))
-			if err != nil {
-				return nil, err
-			}
-			out.Timeout = &timeout
-		}
+	timeout, err := convertTimeout(in.Timeout)
+	if err != nil {
+		return nil, err
 	}
+	out.Timeout = timeout
 
 	return out, nil
 }
@@ -2109,6 +2113,50 @@ func (cb *ConfigBuilder) convertGlobalVictorOpsConfig(ctx context.Context, out *
 	return nil
 }
 
+func (cb *ConfigBuilder) convertIncidentioConfig(ctx context.Context, in monitoringv1alpha1.IncidentioConfig, crKey types.NamespacedName) (*incidentioConfig, error) {
+	out := &incidentioConfig{
+		VSendResolved: in.SendResolved,
+		MaxAlerts:     in.MaxAlerts,
+	}
+
+	if in.URL != "" {
+		out.URL = string(in.URL)
+	}
+
+	if in.AlertSourceToken != nil {
+		token, err := cb.store.GetSecretKey(ctx, crKey.Namespace, *in.AlertSourceToken)
+		if err != nil {
+			return nil, err
+		}
+		out.AlertSourceToken = token
+	}
+
+	httpConfig, err := cb.convertHTTPConfig(ctx, in.HTTPConfig, crKey)
+	if err != nil {
+		return nil, err
+	}
+	out.HTTPConfig = httpConfig
+
+	timeout, err := convertTimeout(in.Timeout)
+	if err != nil {
+		return nil, err
+	}
+	out.Timeout = timeout
+
+	return out, nil
+}
+
+func convertTimeout(in *monitoringv1.Duration) (*model.Duration, error) {
+	if ptr.Deref(in, "") == "" {
+		return nil, nil
+	}
+	timeout, err := model.ParseDuration(string(*in))
+	if err != nil {
+		return nil, err
+	}
+	return &timeout, nil
+}
+
 // sanitize the config against a specific Alertmanager version
 // types may be sanitized in one of two ways:
 // 1. stripping the unsupported config and log a warning
@@ -2253,6 +2301,54 @@ func (gc *globalConfig) sanitize(amVersion semver.Version, logger *slog.Logger) 
 		msg := "'victorops_api_key' and 'victorops_api_key_file' are mutually exclusive - 'victorops_api_key' has taken precedence"
 		logger.Warn(msg)
 		gc.VictorOpsAPIKeyFile = ""
+	}
+
+	if gc.WeChatAPISecretFile != "" && amVersion.LT(semver.MustParse("0.31.0")) {
+		msg := "'wechat_api_secret_file' supported in Alertmanager >= 0.31.0 only - dropping field from provided config"
+		logger.Warn(msg, "current_version", amVersion.String())
+		gc.WeChatAPISecretFile = ""
+	}
+
+	if gc.WeChatAPISecret != "" && gc.WeChatAPISecretFile != "" {
+		msg := "'wechat_api_secret' and 'wechat_api_secret_file' are mutually exclusive - 'wechat_api_secret' has taken precedence"
+		logger.Warn(msg)
+		gc.WeChatAPISecretFile = ""
+	}
+
+	if gc.TelegramBotToken != "" && amVersion.LT(semver.MustParse("0.31.0")) {
+		msg := "'telegram_bot_token' supported in Alertmanager >= 0.31.0 only - dropping field from provided config"
+		logger.Warn(msg, "current_version", amVersion.String())
+		gc.TelegramBotToken = ""
+	}
+
+	if gc.TelegramBotTokenFile != "" && amVersion.LT(semver.MustParse("0.31.0")) {
+		msg := "'telegram_bot_token_file' supported in Alertmanager >= 0.31.0 only - dropping field from provided config"
+		logger.Warn(msg, "current_version", amVersion.String())
+		gc.TelegramBotTokenFile = ""
+	}
+
+	if gc.TelegramBotToken != "" && gc.TelegramBotTokenFile != "" {
+		msg := "'telegram_bot_token' and 'telegram_bot_token_file' are mutually exclusive - 'telegram_bot_token' has taken precedence"
+		logger.Warn(msg)
+		gc.TelegramBotTokenFile = ""
+	}
+
+	if gc.SMTPAuthSecretFile != "" && amVersion.LT(semver.MustParse("0.31.0")) {
+		msg := "'smtp_auth_secret_file' supported in Alertmanager >= 0.31.0 only - dropping field from provided config"
+		logger.Warn(msg, "current_version", amVersion.String())
+		gc.SMTPAuthSecretFile = ""
+	}
+
+	if gc.SMTPAuthSecret != "" && gc.SMTPAuthSecretFile != "" {
+		msg := "'smtp_auth_secret' and 'smtp_auth_secret_file' are mutually exclusive - 'smtp_auth_secret' has taken precedence"
+		logger.Warn(msg)
+		gc.SMTPAuthSecretFile = ""
+	}
+
+	if gc.SMTPForceImplicitTLS != nil && amVersion.LT(semver.MustParse("0.31.0")) {
+		msg := "'smtp_force_implicit_tls' supported in Alertmanager >= 0.31.0 only - dropping field from provided config"
+		logger.Warn(msg, "current_version", amVersion.String())
+		gc.SMTPForceImplicitTLS = nil
 	}
 
 	if gc.WeChatAPISecretFile != "" && amVersion.LT(semver.MustParse("0.31.0")) {
